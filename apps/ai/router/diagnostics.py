@@ -30,8 +30,12 @@ async def run_diagnostic(
     # 3. Send to Hugging Face Serverless API
     try:
         hf_response = await query_huggingface_model(image_bytes, model_info["model_id"])
+    except HTTPException as http_exc:
+        # If the error came from our HF client (like 503 or 401), pass it through directly
+        raise http_exc
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        # If it's a raw code or network crash, use repr() to get the full traceback name
+        raise HTTPException(status_code=502, detail=f"System Crash: {repr(e)}")
 
     # 4. Parse the Hugging Face output 
     # HF usually returns a list of dicts: [{'label': 'PNEUMONIA', 'score': 0.98}, ...]

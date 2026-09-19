@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional, List
 # The 12-disease lookup table
 DISEASE_REGISTRY: Dict[str, Dict[str, Any]] = {
     "pneumonia": {
-        "model_id": "nickmuchi/vit-finetuned-chest-xray-pneumonia",
+        "model_id": "lxyuan/vit-xray-pneumonia-classification",
         "display_name": "Pneumonia Detection",
         "modality": "Chest X-Ray",
     },

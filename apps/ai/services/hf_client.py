@@ -2,16 +2,20 @@ import httpx
 from fastapi import HTTPException
 from config import settings
 
-HF_BASE_URL = "https://api-inference.huggingface.co/models"
-
+# Pointing to the new Hugging Face Inference Provider router
+HF_BASE_URL = "https://router.huggingface.co/hf-inference/models"
 
 async def query_huggingface_model(image_bytes: bytes, model_id: str) -> list:
     """
     Sends raw in-memory image bytes to a specific Hugging Face model endpoint.
-    No image is saved to disk or cloud storage.
     """
     target_url = f"{HF_BASE_URL}/{model_id}"
-    headers = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
+    
+    # We forcefully inject the Content-Type header to bypass the HF Router strictness
+    headers = {
+        "Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}",
+        "Content-Type": "image/jpeg"
+    }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(target_url, headers=headers, content=image_bytes)
