@@ -1,0 +1,5 @@
+medical_output:
+  diagnostic_claims_allowed: false
+  preserve_disclaimer: true
+  abstain_on_missing_input: true
+  never_fabricate_patient_data: true

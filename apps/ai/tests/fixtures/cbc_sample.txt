@@ -1,0 +1,7 @@
+Patient: John Doe
+DOB: 1990-02-14
+Doctor: Dr. Jane Smith
+Report Date: 2026-09-18
+Diagnosis: Mild anemia
+Hemoglobin: 10.7 g/dL
+Platelet Count: 210000 /uL
