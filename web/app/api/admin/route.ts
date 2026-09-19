@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbClient } from '@/lib/db';
+import { getDbClient } from '@/lib/server/db';
 import { initializeDatabase } from '@/../../packages/db/init';
-import { getIdentity } from '@/lib/auth';
+import { getIdentity } from '@/lib/server/auth';
 
 // Admin: init DB (schema validation + indexes)
 export async function POST(request: NextRequest) {

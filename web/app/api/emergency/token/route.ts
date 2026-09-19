@@ -12,7 +12,7 @@ import {
 } from '@/../../packages/db';
 import type { UserDocument } from '@/../../packages/db/users';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
-import { getDbClient } from '@/lib/db';
+import { getDbClient } from '@/lib/server/db';
 
 // Rate limiting map (in-memory, use Redis in production)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { DocumentDocument } from '@/../../packages/db/documents';
-import { getIdentity } from '@/lib/auth';
+import { getIdentity } from '@/lib/server/auth';
 
 export async function PATCH(request: NextRequest) {
   const body = await request.json();

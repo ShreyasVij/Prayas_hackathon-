@@ -15,9 +15,9 @@ import {
 } from '@/../../packages/db';
 import type { UserDocument } from '@/../../packages/db/users';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
-import { getDbClient } from '@/lib/db';
-import { generateNfcTokenBundle } from '@/lib/nfcGenerator';
-import { nfcTokenCreationLimiter } from '@/lib/rateLimiter';
+import { getDbClient } from '@/lib/server/db';
+import { generateNfcTokenBundle } from '@/lib/server/nfcGenerator';
+import { nfcTokenCreationLimiter } from '@/lib/server/rateLimiter';
 
 function getClientInfo(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ||

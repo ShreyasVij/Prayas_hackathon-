@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/authOptions';
-import { sendEmail, EmailTemplate } from '@/lib/email';
+import { authOptions } from '@/lib/server/authOptions';
+import { sendEmail, EmailTemplate } from '@/lib/server/email';
 
 // POST /api/email/send
 // Send an email (authenticated only)

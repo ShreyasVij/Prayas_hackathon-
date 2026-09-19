@@ -18,11 +18,11 @@ import {
   createAccessLog,
   countRecentFailedAttempts,
 } from '@/../../packages/db';
-import { getDbClient } from '@/lib/db';
-import { nfcOtpVerificationLimiter } from '@/lib/rateLimiter';
-import { verifyOtp, parseUserAgent, hashToken } from '@/lib/nfcGenerator';
-import { getGeolocationFromIp } from '@/lib/geolocation';
-import { sendNfcAccessNotificationEmail } from '@/lib/emailHooks';
+import { getDbClient } from '@/lib/server/db';
+import { nfcOtpVerificationLimiter } from '@/lib/server/rateLimiter';
+import { verifyOtp, parseUserAgent, hashToken } from '@/lib/server/nfcGenerator';
+import { getGeolocationFromIp } from '@/lib/server/geolocation';
+import { sendNfcAccessNotificationEmail } from '@/lib/server/emailHooks';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 import type { UserDocument } from '@/../../packages/db/users';
 

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { ShareDocument } from '@/../../packages/db/shares';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 import { hasPermission } from '@/../../packages/auth/rbac';
-import { getIdentity } from '@/lib/auth';
-import { sendDocumentSharedEmail } from '@/lib/emailHooks';
+import { getIdentity } from '@/lib/server/auth';
+import { sendDocumentSharedEmail } from '@/lib/server/emailHooks';
 
 export async function GET(request: NextRequest) {
   const profileId = request.nextUrl.searchParams.get('profileId');

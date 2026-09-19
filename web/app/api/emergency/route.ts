@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
-import { canPerformEmergencyAccess } from '@/lib/permissions';
-import { logAudit } from '@/lib/audit';
-import { getIdentity } from '@/lib/auth';
-import { decryptJson } from '@/lib/crypto';
+import { canPerformEmergencyAccess } from '@/lib/server/permissions';
+import { logAudit } from '@/lib/server/audit';
+import { getIdentity } from '@/lib/server/auth';
+import { decryptJson } from '@/lib/server/crypto';
 
 // Issue a static emergency token (demo)
 export async function POST(request: NextRequest) {

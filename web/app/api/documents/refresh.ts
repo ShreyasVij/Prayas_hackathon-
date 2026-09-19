@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
 import { callOpenRouterSummary } from '@/services/aiClient';

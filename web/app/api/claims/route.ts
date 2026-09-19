@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { ClaimDocument } from '@/../../packages/db/claims';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 import { hasPermission } from '@/../../packages/auth/rbac';
-import { logAudit } from '@/lib/audit';
-import { getIdentity } from '@/lib/auth';
+import { logAudit } from '@/lib/server/audit';
+import { getIdentity } from '@/lib/server/auth';
 
 // List claims for a profile
 export async function GET(request: NextRequest) {

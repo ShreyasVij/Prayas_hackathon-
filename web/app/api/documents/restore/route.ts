@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { DocumentDocument } from '@/../../packages/db/documents';
-import { getIdentity } from '@/lib/auth';
-import { canDeleteDocument } from '@/lib/permissions';
+import { getIdentity } from '@/lib/server/auth';
+import { canDeleteDocument } from '@/lib/server/permissions';
 
 export async function POST(request: NextRequest) {
   try {

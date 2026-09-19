@@ -13,11 +13,11 @@ import {
   getActiveOtpForToken,
   createAccessLog,
 } from '@/../../packages/db';
-import { getDbClient } from '@/lib/db';
-import { nfcOtpRequestLimiter } from '@/lib/rateLimiter';
-import { generateOtpCode, createOtpSession as createOtpData, parseUserAgent, hashToken } from '@/lib/nfcGenerator';
-import { getGeolocationFromIp } from '@/lib/geolocation';
-import { sendNfcOtpEmail } from '@/lib/emailHooks';
+import { getDbClient } from '@/lib/server/db';
+import { nfcOtpRequestLimiter } from '@/lib/server/rateLimiter';
+import { generateOtpCode, createOtpSession as createOtpData, parseUserAgent, hashToken } from '@/lib/server/nfcGenerator';
+import { getGeolocationFromIp } from '@/lib/server/geolocation';
+import { sendNfcOtpEmail } from '@/lib/server/emailHooks';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 
 interface RequestBody {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { findTokenByHash, markAccessNotificationSent } from '@/../../packages/db';
 import type { UserDocument } from '@/../../packages/db/users';
-import { getDbClient } from '@/lib/db';
+import { getDbClient } from '@/lib/server/db';
 
 // This endpoint sends emergency contact notification
 // In production, integrate with Twilio/SendGrid/WhatsApp Business API

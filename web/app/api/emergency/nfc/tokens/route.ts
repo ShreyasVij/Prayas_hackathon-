@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { getTokensForProfile } from '@/../../packages/db';
-import { getDbClient } from '@/lib/db';
+import { getDbClient } from '@/lib/server/db';
 import type { UserDocument } from '@/../../packages/db/users';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 

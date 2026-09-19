@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revokeSession, revokeAllSessionsForUser } from '@/../../packages/auth/sessionRevocation';
-import { getIdentity } from '@/lib/auth';
-import { logAudit } from '@/lib/audit';
+import { getIdentity } from '@/lib/server/auth';
+import { logAudit } from '@/lib/server/audit';
 
 export async function POST(request: NextRequest) {
   const { actorId, role, session } = await getIdentity();

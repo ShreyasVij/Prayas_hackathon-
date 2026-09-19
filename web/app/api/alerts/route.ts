@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { AlertDocument } from '@/../../packages/db/alerts';
-import { logAudit } from '@/lib/audit';
-import { canAccessProfile } from '@/lib/permissions';
+import { logAudit } from '@/lib/server/audit';
+import { canAccessProfile } from '@/lib/server/permissions';
 import { hasPermission } from '@/../../packages/auth/rbac';
-import { getIdentity } from '@/lib/auth';
+import { getIdentity } from '@/lib/server/auth';
 
 export async function GET(request: NextRequest) {
   const profileId = request.nextUrl.searchParams.get('profileId');

@@ -2,11 +2,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { Buffer } from 'buffer';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { JobDocument } from '@/../../packages/db/jobs';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import { createDownloadUrl } from '@/services/storageClient';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 import { callExtract, callExtractMulti, callSummarize } from '@/services/aiClient';
 import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
 

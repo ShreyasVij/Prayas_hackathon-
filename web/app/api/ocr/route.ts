@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
-import { getIdentity } from '@/lib/auth';
+import { getCollection } from '@/lib/server/db';
+import { getIdentity } from '@/lib/server/auth';
 import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
 
 export async function GET(request: NextRequest) {

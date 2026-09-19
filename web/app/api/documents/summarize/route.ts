@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { JobDocument, DocumentDocument, OcrOutputDocument } from '@/../../packages/db/index';
-import { getIdentity } from '@/lib/auth';
-import { canDownloadDocument } from '@/lib/permissions';
+import { getIdentity } from '@/lib/server/auth';
+import { canDownloadDocument } from '@/lib/server/permissions';
 import { randomUUID } from 'crypto';
 import { callOcr } from '@/services/aiClient';
 

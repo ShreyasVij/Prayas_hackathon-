@@ -1,5 +1,5 @@
 // Permission checks for resource-level and share-scoped access.
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { ShareDocument } from '@/../../packages/db/shares';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 import type { DocumentDocument } from '@/../../packages/db/documents';

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
-import { getIdentity } from '@/lib/auth';
+import { getCollection } from '@/lib/server/db';
+import { getIdentity } from '@/lib/server/auth';
 import { hasPermission } from '@/../../packages/auth/rbac';
 import type { UserDocument } from '@/../../packages/db/users';
 import { ensureUserSpace } from '@/services/storageClient';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 
 // Admin-only route to initialize per-user Supabase storage space for given emails
 // POST body: { emails: string[] }

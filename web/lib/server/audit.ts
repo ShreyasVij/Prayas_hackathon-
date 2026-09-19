@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { AuditDocument } from '@/../../packages/db/audits';
 
 export async function logAudit(req: NextRequest, entry: Omit<AuditDocument, 'id' | 'timestamp'> & { timestamp?: Date }) {

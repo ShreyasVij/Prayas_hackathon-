@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
-import { getIdentity } from '@/lib/auth';
+import { getCollection } from '@/lib/server/db';
+import { getIdentity } from '@/lib/server/auth';
 import type { TrendDocument } from '@/../../packages/db/trends';
-import { canAccessProfile } from '@/lib/permissions';
+import { canAccessProfile } from '@/lib/server/permissions';
 
 export async function GET(request: NextRequest) {
   const profileId = request.nextUrl.searchParams.get('profileId');

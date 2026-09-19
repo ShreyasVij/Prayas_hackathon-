@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getIdentity } from '@/lib/auth';
+import { getIdentity } from '@/lib/server/auth';
 import { issueAccessToken, issueRefreshToken } from '@/../../packages/auth/jwt';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { SessionDocument } from '@/../../packages/db/sessions';
 import type { UserDocument } from '@/../../packages/db/users';
 import { randomUUID, createHash } from 'crypto';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 
 function sha256(input: string): string {
   return createHash('sha256').update(input).digest('hex');

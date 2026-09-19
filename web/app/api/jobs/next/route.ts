@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { JobDocument } from '@/../../packages/db/jobs';
 import { createDownloadUrl } from '@/services/storageClient';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 
 function isAuthorized(req: NextRequest): boolean {
   const token = req.headers.get('x-internal-token');

@@ -12,10 +12,10 @@ import {
   findPreAuthDoctorForToken,
   createAccessLog,
 } from '@/../../packages/db';
-import { getDbClient } from '@/lib/db';
-import { filterToFullProfile } from '@/lib/emergencyNfcFilters';
-import { parseUserAgent, hashToken } from '@/lib/nfcGenerator';
-import { getGeolocationFromIp } from '@/lib/geolocation';
+import { getDbClient } from '@/lib/server/db';
+import { filterToFullProfile } from '@/lib/server/emergencyNfcFilters';
+import { parseUserAgent, hashToken } from '@/lib/server/nfcGenerator';
+import { getGeolocationFromIp } from '@/lib/server/geolocation';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 
 function getClientInfo(req: NextRequest) {

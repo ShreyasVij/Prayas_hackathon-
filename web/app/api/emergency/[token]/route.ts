@@ -7,7 +7,7 @@ import {
   detectSuspiciousActivity,
 } from '@/../../packages/db';
 import type { UserDocument } from '@/../../packages/db/users';
-import { getDbClient } from '@/lib/db';
+import { getDbClient } from '@/lib/server/db';
 
 // Rate limiting map for token access attempts
 const accessRateLimitMap = new Map<string, { count: number; resetAt: number }>();

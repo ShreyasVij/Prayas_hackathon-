@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rotateRefreshToken } from '@/../../packages/auth/refreshRotation';
 import { verifyToken } from '@/../../packages/auth/jwt';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));

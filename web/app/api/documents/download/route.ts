@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import { createDownloadUrl, createDownloadUrlsForPrefix, listFiles } from '@/services/storageClient';
-import { logAudit } from '@/lib/audit';
-import { canDownloadDocument } from '@/lib/permissions';
-import { getIdentity } from '@/lib/auth';
+import { logAudit } from '@/lib/server/audit';
+import { canDownloadDocument } from '@/lib/server/permissions';
+import { getIdentity } from '@/lib/server/auth';
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get('id');

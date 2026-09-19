@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
-import { getIdentity } from '@/lib/auth';
-import { canAccessProfile } from '@/lib/permissions';
+import { getCollection } from '@/lib/server/db';
+import { getIdentity } from '@/lib/server/auth';
+import { canAccessProfile } from '@/lib/server/permissions';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import type { AlertDocument } from '@/../../packages/db/alerts';
 import type { ClaimDocument } from '@/../../packages/db/claims';

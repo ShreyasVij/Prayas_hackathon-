@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { JobDocument, OcrOutputDocument, DocumentDocument, ClassificationDocument, TrendDocument, SummaryDocument } from '@/../../packages/db/index';
-import { logAudit } from '@/lib/audit';
+import { logAudit } from '@/lib/server/audit';
 import { randomUUID } from 'crypto';
-import { processAndStoreVitals, regenerateHealthSummary } from '@/lib/vitalsProcessor';
+import { processAndStoreVitals, regenerateHealthSummary } from '@/lib/server/vitalsProcessor';
 
 function isAuthorized(req: NextRequest): boolean {
   const token = req.headers.get('x-internal-token');

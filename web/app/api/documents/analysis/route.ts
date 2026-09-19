@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection } from '@/lib/server/db';
 import type { ClassificationDocument, OcrOutputDocument, DocumentDocument, SummaryDocument } from '@/../../packages/db/index';
-import { canDownloadDocument } from '@/lib/permissions';
-import { getIdentity } from '@/lib/auth';
+import { canDownloadDocument } from '@/lib/server/permissions';
+import { getIdentity } from '@/lib/server/auth';
 
 export async function GET(request: NextRequest) {
   const documentId = request.nextUrl.searchParams.get('documentId');

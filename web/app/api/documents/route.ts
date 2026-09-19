@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getCollection } from '@/lib/db';
-import { regenerateHealthSummary } from '@/lib/vitalsProcessor';
+import { getCollection } from '@/lib/server/db';
+import { regenerateHealthSummary } from '@/lib/server/vitalsProcessor';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import type { DocumentVersionDocument } from '@/../../packages/db/documentVersions';
 import { uploadFile } from '@/services/storageClient';
-import { logAudit } from '@/lib/audit';
-import { canAccessProfile, canUploadDocument, canDeleteDocument } from '@/lib/permissions';
+import { logAudit } from '@/lib/server/audit';
+import { canAccessProfile, canUploadDocument, canDeleteDocument } from '@/lib/server/permissions';
 import type { JobDocument } from '@/../../packages/db/jobs';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
-import { getIdentity } from '@/lib/auth';
+import { getIdentity } from '@/lib/server/auth';
 import { ensureUserSpace } from '@/services/storageClient';
 
 
