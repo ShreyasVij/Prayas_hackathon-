@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DRY_RUN, MOCK_DOCUMENTS } from '@/lib/dry-run/mock-data';
 import { randomUUID } from 'crypto';
 import { getCollection } from '@/lib/server/db';
 import { regenerateHealthSummary } from '@/lib/server/vitalsProcessor';
-import type { DocumentDocument } from '@/../../packages/db/documents';
-import type { DocumentVersionDocument } from '@/../../packages/db/documentVersions';
+import type { DocumentDocument } from '@/packages/db/documents';
+import type { DocumentVersionDocument } from '@/packages/db/documentVersions';
 import { uploadFile } from '@/services/storageClient';
 import { logAudit } from '@/lib/server/audit';
 import { canAccessProfile, canUploadDocument, canDeleteDocument } from '@/lib/server/permissions';
-import type { JobDocument } from '@/../../packages/db/jobs';
-import type { ProfileDocument } from '@/../../packages/db/profiles';
+import type { JobDocument } from '@/packages/db/jobs';
+import type { ProfileDocument } from '@/packages/db/profiles';
 import { getIdentity } from '@/lib/server/auth';
 import { ensureUserSpace } from '@/services/storageClient';
 
 
 export async function GET(request: NextRequest) {
+  // ── DRY RUN ──────────────────────────────────────────────────────────────
+  if (DRY_RUN) {
+    return NextResponse.json({ data: MOCK_DOCUMENTS }, { status: 200 });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
   const { role, actorId } = await getIdentity();
   let profileId = request.nextUrl.searchParams.get('profileId') || 'default-profile';
   const statusFilter = (request.nextUrl.searchParams.get('status') || 'active') as DocumentDocument['status'];
@@ -399,7 +405,7 @@ export async function DELETE(request: NextRequest) {
     const owner = doc?.ownerUserId || undefined;
     if (owner) {
       // Always regenerate after a soft-delete so the dashboard reflects removals immediately
-      void (await import('@/lib/vitalsProcessor')).regenerateHealthSummary(owner).catch(() => {});
+      void (await import('@/lib/server/vitalsProcessor')).regenerateHealthSummary(owner).catch(() => {});
     }
   } catch {}
   await logAudit(request, {

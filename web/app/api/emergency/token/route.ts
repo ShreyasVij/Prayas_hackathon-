@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DRY_RUN, MOCK_EMERGENCY_TOKEN, MOCK_ACTIVE_TOKENS } from '@/lib/dry-run/mock-data';
 import { getServerSession } from 'next-auth';
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
@@ -43,6 +44,11 @@ function getClientInfo(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // ── DRY RUN ────────────────────────────────────────────────────────────────
+  if (DRY_RUN) {
+    return NextResponse.json(MOCK_EMERGENCY_TOKEN);
+  }
+  // ───────────────────────────────────────────────────────────────────────────
   try {
     // Get authenticated session
     const session = await getServerSession();
@@ -217,6 +223,11 @@ export async function POST(req: NextRequest) {
 
 // GET endpoint to list active tokens
 export async function GET(req: NextRequest) {
+  // ── DRY RUN ──────────────────────────────────────────────────────────────
+  if (DRY_RUN) {
+    return NextResponse.json({ success: true, tokens: MOCK_ACTIVE_TOKENS });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
   try {
     const session = await getServerSession();
     

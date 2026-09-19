@@ -1,5 +1,6 @@
 
 import { NextResponse } from "next/server";
+import { DRY_RUN, MOCK_VITALS, MOCK_GROUPED_VITALS } from "@/lib/dry-run/mock-data";
 import { getCollection } from "@/lib/server/db";
 import type { VitalReading } from "@/../../packages/db/userVitals";
 import { normalizeVital } from "@/lib/server/vitalsProcessor";
@@ -7,6 +8,15 @@ import type { DocumentDocument } from "@/../../packages/db/documents";
 import { getIdentity } from "@/lib/server/auth";
 
 export async function GET() {
+  // ── DRY RUN ──────────────────────────────────────────────────────────────
+  if (DRY_RUN) {
+    return NextResponse.json({
+      vitals: MOCK_VITALS,
+      groupedVitals: MOCK_GROUPED_VITALS,
+      totalCount: MOCK_VITALS.length,
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
   try {
     const { actorId } = await getIdentity();
     if (!actorId || actorId === 'anon') {

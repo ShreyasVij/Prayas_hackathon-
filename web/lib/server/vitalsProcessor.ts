@@ -3,10 +3,10 @@
  */
 
 import { getCollection } from './db';
-import type { VitalReading } from '@/../../packages/db/userVitals';
+import type { VitalReading } from '@/packages/db/userVitals';
 import { callVitalExplainBatchPrompt, callHealthSummaryPrompt } from '@/services/aiClient';
-import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
-import { vitalsLogger, healthSummaryLogger } from './server/logger';
+import type { OcrOutputDocument } from '@/packages/db/ocrOutputs';
+import { vitalsLogger, healthSummaryLogger } from './logger';
 
 interface VitalFromDocument {
   label: string;

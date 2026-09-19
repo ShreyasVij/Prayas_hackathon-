@@ -1,7 +1,17 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with your API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy singleton — instantiated on first call, not at module load.
+// This prevents Turbopack / Next.js from crashing during module evaluation
+// when RESEND_API_KEY hasn't been loaded yet.
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) throw new Error('RESEND_API_KEY is not set');
+    _resend = new Resend(key);
+  }
+  return _resend;
+}
 
 const emailConfig = {
   fromName: process.env.RESEND_FROM_NAME || "Medora",
@@ -25,14 +35,20 @@ export async function sendEmail({
   data = {},
   replyTo,
 }: SendEmailParams) {
+  // ── DRY RUN MODE ──────────────────────────────────────────────────────────
+  // Set NEXT_PUBLIC_DRY_RUN=true in .env to skip all external service calls.
+  if (process.env.NEXT_PUBLIC_DRY_RUN === 'true') {
+    console.log(`[DRY RUN] sendEmail skipped → subject: "${subject}", to: ${JSON.stringify(to)}`);
+    return { success: true, messageId: 'dry-run-noop' };
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   console.log("--- New Email Sending Attempt ---");
   console.log(`Timestamp: ${new Date().toISOString()}`);
 
-  // Mask the API key for security, showing only the last 4 characters
   const apiKey = process.env.RESEND_API_KEY;
   const maskedApiKey = apiKey ? `...${apiKey.slice(-4)}` : "Not set";
   console.log(`Using Resend API Key (masked): ${maskedApiKey}`);
-
   console.log("RESEND_FROM_EMAIL env var:", process.env.RESEND_FROM_EMAIL);
   console.log("Using email config:", emailConfig);
 
@@ -51,6 +67,7 @@ export async function sendEmail({
 
   console.log("Sending payload to Resend:", { from: payload.from, to: payload.to, subject: payload.subject });
 
+  const resend = getResend();
   const { data: resultData, error } = await resend.emails.send(payload);
 
   if (error) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DRY_RUN, MOCK_HEALTH_SUMMARY } from "@/lib/dry-run/mock-data";
 import { getCollection } from "@/lib/server/db";
 import type { UserHealthSummary } from "@/../../packages/db/userHealthSummary";
 import type { OcrOutputDocument } from "@/../../packages/db/ocrOutputs";
@@ -7,6 +8,11 @@ import { randomUUID } from 'crypto';
 import { getIdentity } from "@/lib/server/auth";
 
 export async function GET() {
+  // ── DRY RUN ──────────────────────────────────────────────────────────────
+  if (DRY_RUN) {
+    return NextResponse.json({ summary: MOCK_HEALTH_SUMMARY, processing: false });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
   try {
     const { actorId } = await getIdentity();
     

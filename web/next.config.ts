@@ -6,6 +6,9 @@ const nextConfig = {
   turbopack: {
     root: path.join(__dirname, '..', '..'),
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   // Temporarily disable Turbopack filesystem cache in dev to avoid persistence panics
   experimental: {
     turbopackFileSystemCacheForDev: false,

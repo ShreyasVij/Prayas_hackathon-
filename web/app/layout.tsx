@@ -1,11 +1,13 @@
 import React from 'react'
 import { AppLayout } from '@/components/AppLayout'
 import './globals.css'
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 import Providers from "./api/auth/[...nextauth]/providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/server/authOptions";
+import { MOCK_USER } from "@/lib/dry-run/mock-data";
+
+const DRY_RUN = process.env.NEXT_PUBLIC_DRY_RUN === 'true';
 
 export const metadata = {
   title: 'MEDILOCKER',
@@ -13,7 +15,10 @@ export const metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  // In DRY_RUN mode skip real session lookup — no OAuth credentials needed
+  const session = DRY_RUN
+    ? { user: MOCK_USER }
+    : await getServerSession(authOptions);
   const userName = (session as any)?.user?.name || (session as any)?.user?.email || undefined;
   const role = (((session as any)?.user?.roles || [])[0] || 'patient') as 'patient' | 'doctor' | 'admin';
   
@@ -34,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-background text-foreground">
         <Providers>
           <AppLayout userName={userName} role={role}>
-            <div className="container py-4">{children}</div>
+            {children}
           </AppLayout>
         </Providers>
       </body>

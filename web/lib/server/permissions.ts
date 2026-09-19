@@ -1,9 +1,9 @@
 // Permission checks for resource-level and share-scoped access.
 import { getCollection } from '@/lib/server/db';
-import type { ShareDocument } from '@/../../packages/db/shares';
-import type { ProfileDocument } from '@/../../packages/db/profiles';
-import type { DocumentDocument } from '@/../../packages/db/documents';
-import { hasPermission, Role } from '@/../../packages/auth/rbac';
+import type { ShareDocument } from '@/packages/db/shares';
+import type { ProfileDocument } from '@/packages/db/profiles';
+import type { DocumentDocument } from '@/packages/db/documents';
+import { hasPermission, Role } from '@/packages/auth/rbac';
 
 async function hasActiveShare(params: { profileId: string; actorId: string; permission?: 'view' | 'upload' | 'summary'; docId?: string }) {
   const sharesCol = await getCollection<ShareDocument>('shares');

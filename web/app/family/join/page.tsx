@@ -1,11 +1,11 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
 type InviteState = "loading" | "success" | "invalid" | "error";
 
-export default function JoinFamilyPage() {
+function JoinFamilyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -206,5 +206,13 @@ export default function JoinFamilyPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function JoinFamilyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center p-8 text-zinc-500">Loading Invitation...</div>}>
+      <JoinFamilyContent />
+    </Suspense>
   );
 }
