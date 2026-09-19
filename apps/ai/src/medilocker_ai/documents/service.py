@@ -11,7 +11,7 @@ from .ocr import OCRService
 from .summarization import SummarizationService
 from .title_generation import TitleGenerationService
 from ..core.config import get_settings
-from ..core.safety import InvalidInputError
+from ..core.safety import InvalidInputError, StorageError
 from ..storage.database import get_database
 
 
@@ -60,9 +60,8 @@ class DocumentService:
         }
         try:
             await get_database().upsert("ocrOutputs", {"id": record_id}, record)
-        except Exception:
-            # AI success should not be converted to a 500 solely because optional persistence is unavailable.
-            return
+        except Exception as exc:
+            raise StorageError("Unable to persist OCR output") from exc
 
     async def extract_text(self, ocr_text: str) -> dict[str, Any]:
         return await self.extraction.extract(ocr_text)

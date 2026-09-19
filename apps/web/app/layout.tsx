@@ -1,31 +1,26 @@
-import React from 'react'
-import { AppLayout } from '@/components/AppLayout'
-import './globals.css'
+import React from 'react';
+import { AppLayout } from '@/components/AppLayout';
+import './globals.css';
 
 import Providers from "./api/auth/[...nextauth]/providers";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/server/authOptions";
-import { MOCK_USER } from "@/lib/dry-run/mock-data";
-
-const DRY_RUN = process.env.NEXT_PUBLIC_DRY_RUN === 'true';
 
 export const metadata = {
   title: 'MEDILOCKER',
   description: 'Web app',
-}
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // In DRY_RUN mode skip real session lookup — no OAuth credentials needed
-  const session = DRY_RUN
-    ? { user: MOCK_USER }
-    : await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
   const userName = (session as any)?.user?.name || (session as any)?.user?.email || undefined;
   const role = (((session as any)?.user?.roles || [])[0] || 'patient') as 'patient' | 'doctor' | 'admin';
   
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Load Google Maps API */}
         {apiKey && (
@@ -36,11 +31,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           />
         )}
       </head>
-      <body className="min-h-screen bg-background text-foreground">
+      <body className="min-h-screen bg-background text-foreground transition-colors duration-300">
         <Providers>
-          <AppLayout userName={userName} role={role}>
-            {children}
-          </AppLayout>
+          <ThemeProvider>
+            <AppLayout userName={userName} role={role}>
+              {children}
+            </AppLayout>
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

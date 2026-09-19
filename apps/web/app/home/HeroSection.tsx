@@ -69,10 +69,10 @@ export default function Hero({ isAuthed }: { isAuthed: boolean }) {
             className="mt-8 flex flex-wrap items-center justify-center gap-3.5"
           >
             <Link
-              href="/dashboard"
+              href={isAuthed ? "/dashboard" : "/auth?callbackUrl=/dashboard"}
               className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-md hover:shadow-lg hover:shadow-teal-600/20 transition-all duration-200"
             >
-              <span>Launch Dashboard</span>
+              <span>{isAuthed ? "Launch Dashboard" : "Sign In to Access Vault"}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
 
@@ -85,7 +85,7 @@ export default function Hero({ isAuthed }: { isAuthed: boolean }) {
             </Link>
 
             <Link
-              href="/documents"
+              href={isAuthed ? "/documents" : "/auth?callbackUrl=/documents"}
               className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 text-zinc-700 font-medium text-sm transition-all duration-200"
             >
               <FileText className="h-4 w-4 text-zinc-500" />

@@ -21,7 +21,9 @@ class Settings(BaseSettings):
     web_base_url: str = "http://localhost:3000"
     allow_origins: str = ""
 
-    ai_runtime_provider: Literal["mock", "huggingface", "local"] = "mock"
+    ai_runtime_provider: Literal["mock", "gemini", "huggingface", "local"] = "mock"
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.0-flash"
     hf_token: str | None = None
     hf_text_model: str | None = None
     hf_base_url: str | None = None

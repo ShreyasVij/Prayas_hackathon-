@@ -66,3 +66,13 @@ POST /jobs/run-once
 ```
 
 The diagnostic endpoint is intentionally scaffolded during the parity phase. It is the next layer to populate with the hackathon's specialized medical models.
+
+Service-to-service document and insight requests require:
+
+```text
+Authorization: Bearer <INTERNAL_AUTH_TOKEN>
+```
+
+The web server should set `AI_BASE_URL` to the AI service URL and use the same
+`INTERNAL_AUTH_TOKEN`. This token is server-side only and must not be exposed
+through a `NEXT_PUBLIC_*` environment variable.

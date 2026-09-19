@@ -4,7 +4,7 @@ import { Buffer } from "buffer";
 import { authOptions } from "@/lib/server/authOptions";
 import { getCollection } from "@/lib/server/db";
 import { processAndStoreVitals, regenerateHealthSummary } from "@/lib/server/vitalsProcessor";
-import { callExtract } from "@/services/aiClient";
+import { callExtract } from "@/service/aiClient";
 import { createDownloadUrl } from "@/services/storageClient";
 import type { OcrOutputDocument } from "@/../../packages/db/index";
 import { reprocessLogger } from "@/lib/server/logger";
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
             console.log('[REPROCESS] OCR stored', { documentId: docData.id, textLength: ocrText.length });
             
             // If no vitals exist, extract them from the result
-            const extractedData = extractRes?.data || extractRes;
+            const extractedData = extractRes?.data;
             if ((!Array.isArray(vitals) || vitals.length === 0) && extractedData && Array.isArray(extractedData.vitals) && extractedData.vitals.length > 0) {
               vitals = extractedData.vitals;
               reprocessLogger.info('Vitals extracted, updating metadata', {

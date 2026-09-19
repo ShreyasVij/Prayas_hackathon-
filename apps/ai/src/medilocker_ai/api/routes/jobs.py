@@ -12,4 +12,4 @@ router = APIRouter(prefix="/jobs", dependencies=[Depends(verify_service_token)])
 @router.post("/run-once", response_model=JobRunResponse)
 async def run_job_once() -> JobRunResponse:
     processed = await run_once()
-    return JobRunResponse(processed={"processed": processed})
+    return JobRunResponse(processed=processed)

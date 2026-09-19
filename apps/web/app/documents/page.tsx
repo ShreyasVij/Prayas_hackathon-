@@ -1,11 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import DocumentReviewForm, { ExtractedDocument } from "@/components/DocumentReviewForm";
 
 type Status = "idle" | "uploading" | "processing" | "review" | "error";
 
 export default function DocumentsPage() {
+  const { status: authStatus } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.push("/auth?callbackUrl=/documents");
+    }
+  }, [authStatus, router]);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<Status>("idle");

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIdentity } from '@/lib/server/auth';
 import { getCollection } from '@/lib/server/db';
-import { callSummarize } from '@/services/aiClient';
+import { callSummarize } from '@/service/aiClient';
 
 export async function POST(request: NextRequest) {
   try {

@@ -336,7 +336,7 @@ export default function ProfilePage() {
               <span>You are viewing the profile in guest mode. Please sign in to save credentials.</span>
             </div>
             <Link 
-              href="/doctor/login" 
+              href="/auth?callbackUrl=/doctor/profile" 
               className="px-4 py-1.5 bg-amber-600 text-white rounded-lg font-medium text-xs hover:bg-amber-700 transition"
             >
               Sign In

@@ -15,7 +15,7 @@ export default function EmergencySettingsPage() {
   
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/signin');
+      router.push('/auth?callbackUrl=/emergency/settings');
       return;
     }
     

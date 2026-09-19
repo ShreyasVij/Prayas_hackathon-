@@ -3,7 +3,7 @@ import { DRY_RUN, MOCK_HEALTH_SUMMARY } from "@/lib/dry-run/mock-data";
 import { getCollection } from "@/lib/server/db";
 import type { UserHealthSummary } from "@/../../packages/db/userHealthSummary";
 import type { OcrOutputDocument } from "@/../../packages/db/ocrOutputs";
-import { callHealthSummaryPrompt } from "@/services/aiClient";
+import { callHealthSummaryPrompt } from "@/service/aiClient";
 import { randomUUID } from 'crypto';
 import { getIdentity } from "@/lib/server/auth";
 
