@@ -25,6 +25,16 @@ interface HealthSummary {
   [key: string]: any;
 }
 
+function useHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  return hydrated;
+}
+
 // ─── Health Status Hero ───────────────────────────────────────────────────────
 
 function HealthStatusHero() {
@@ -32,6 +42,7 @@ function HealthStatusHero() {
   const [statusText, setStatusText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(true);
+  const hydrated = useHydrated();
 
   useEffect(() => {
     async function fetchSummary() {
@@ -83,6 +94,7 @@ function HealthStatusHero() {
   }, []);
 
   const reduce = useReducedMotion();
+  const motionEnabled = hydrated && !reduce;
 
   return (
     <HeroHighlight className="rounded-2xl h-full">
@@ -115,7 +127,7 @@ function HealthStatusHero() {
             </div>
           ) : statusText ? (
             <motion.div
-              initial={reduce ? false : { opacity: 0, y: 8 }}
+              initial={motionEnabled ? { opacity: 0, y: 8 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             >
@@ -162,6 +174,8 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
   vitalsLoading: boolean;
 }) {
   const reduce = useReducedMotion();
+  const hydrated = useHydrated();
+  const motionEnabled = hydrated && !reduce;
 
   const containerVariants: Variants = {
     hidden: {},
@@ -174,8 +188,8 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
 
   return (
     <motion.div
-      variants={reduce ? undefined : containerVariants}
-      initial={reduce ? false : "hidden"}
+      variants={motionEnabled ? containerVariants : undefined}
+      initial={motionEnabled ? "hidden" : false}
       animate="show"
       className="grid gap-4"
       style={{
@@ -187,7 +201,7 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
     >
       {/* ── Cell 1: Health Status Hero (2/3 width, row 1) ── */}
       <motion.div
-        variants={reduce ? undefined : cellVariants}
+        variants={motionEnabled ? cellVariants : undefined}
         className="bento-cell"
         style={{ gridArea: "hero" }}
       >
@@ -196,7 +210,7 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
 
       {/* ── Cell 2: Emergency QR (1/3 width, row 1) ── */}
       <motion.div
-        variants={reduce ? undefined : cellVariants}
+        variants={motionEnabled ? cellVariants : undefined}
         className="bento-cell"
         style={{ gridArea: "qr" }}
       >
@@ -205,7 +219,7 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
 
       {/* ── Cell 3: Vitals Trend Chart (2/3 width, row 2) ── */}
       <motion.div
-        variants={reduce ? undefined : cellVariants}
+        variants={motionEnabled ? cellVariants : undefined}
         className="bento-cell"
         style={{ gridArea: "chart" }}
       >
@@ -225,7 +239,7 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
 
       {/* ── Cell 4: Recent Documents (1/3 width, row 2) ── */}
       <motion.div
-        variants={reduce ? undefined : cellVariants}
+        variants={motionEnabled ? cellVariants : undefined}
         className="bento-cell"
         style={{ gridArea: "docs" }}
       >
@@ -248,6 +262,8 @@ function DashboardPageClient() {
   const router = useRouter();
   const { groupedVitals, loading: vitalsLoading } = useVitals();
   const reduce = useReducedMotion();
+  const hydrated = useHydrated();
+  const motionEnabled = hydrated && !reduce;
 
   const isDryRun = process.env.NEXT_PUBLIC_DRY_RUN === 'true';
 
@@ -278,7 +294,7 @@ function DashboardPageClient() {
       <DryRunBanner />
 
       <motion.div
-        initial={reduce ? false : { opacity: 0, y: -8 }}
+        initial={motionEnabled ? { opacity: 0, y: -8 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="mb-6"
