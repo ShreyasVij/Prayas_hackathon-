@@ -338,7 +338,7 @@ export function ConnectionCodeSection() {
               href={`/doctor/patient/${connectedSession.patientId}`}
               className="w-full sm:w-auto px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
             >
-              <span>Access Patient Vault</span>
+              <span>View Patient Records</span>
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>

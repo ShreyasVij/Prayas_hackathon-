@@ -1,20 +1,14 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, DragEvent } from "react";
+import { useRouter } from "next/navigation";
 import { 
   UploadCloud, 
-  FileImage, 
   X, 
-  Sparkles, 
-  Cpu, 
-  CheckCircle2, 
   AlertTriangle, 
   Loader2, 
   RefreshCw, 
   Activity, 
-  Eye, 
-  ChevronRight,
-  ShieldAlert,
   Sliders
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,6 +40,7 @@ export type ScanModality =
   | "general-radiology";
 
 export function MedicalImageUpload() {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [modality, setModality] = useState<ScanModality>("chest-xray");
@@ -55,7 +50,6 @@ export function MedicalImageUpload() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStep, setAnalysisStep] = useState<string>("");
   const [progressPercent, setProgressPercent] = useState<number>(0);
-  const [analysisResult, setAnalysisResult] = useState<DiagnosticResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +60,6 @@ export function MedicalImageUpload() {
 
   const handleFile = (file: File) => {
     setErrorMessage(null);
-    setAnalysisResult(null);
 
     // Validate size
     if (file.size > maxSizeBytes) {
@@ -111,7 +104,6 @@ export function MedicalImageUpload() {
     }
     setSelectedFile(null);
     setPreviewUrl(null);
-    setAnalysisResult(null);
     setIsAnalyzing(false);
     setProgressPercent(0);
     setAnalysisStep("");
@@ -144,25 +136,24 @@ export function MedicalImageUpload() {
 
     setIsAnalyzing(true);
     setErrorMessage(null);
-    setAnalysisResult(null);
     setProgressPercent(15);
-    setAnalysisStep("Initializing tensor preprocessing pipeline...");
+    setAnalysisStep("Preparing image for analysis...");
 
     try {
       // Step 1: Simulated preprocessing
       await new Promise((resolve) => setTimeout(resolve, 800));
       setProgressPercent(45);
-      setAnalysisStep("Normalizing DICOM/Pixel channels & feature extraction...");
+      setAnalysisStep("Normalizing image channels and extracting features...");
 
       // Step 2: Simulated model inference
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setProgressPercent(75);
-      setAnalysisStep(`Running deep convolutional diagnostic model (${modality})...`);
+      setAnalysisStep(`Running diagnostic model (${modality})...`);
 
       // Step 3: Simulated clinical report generation
       await new Promise((resolve) => setTimeout(resolve, 900));
       setProgressPercent(100);
-      setAnalysisStep("Generating structured radiological telemetry report...");
+      setAnalysisStep("Generating structured diagnostic report...");
 
       await new Promise((resolve) => setTimeout(resolve, 400));
 
@@ -209,14 +200,22 @@ export function MedicalImageUpload() {
         analyzedAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
       };
 
-      setAnalysisResult(mockResult);
+      // Store result and preview URL in sessionStorage for the results page
+      sessionStorage.setItem("diagnosticResult", JSON.stringify(mockResult));
+      if (previewUrl) {
+        sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
+      }
+
+      // Navigate to results page
+      router.push("/doctor/result");
     } catch (err: any) {
       console.error("ML Inference error:", err);
-      setErrorMessage(err.message || "Failed to complete ML inference. Check server connectivity.");
+      setErrorMessage(err.message || "Failed to complete diagnostic analysis. Check server connectivity.");
     } finally {
       setIsAnalyzing(false);
     }
   };
+
 
   return (
     <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all duration-200">
@@ -230,14 +229,11 @@ export function MedicalImageUpload() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight">
-                Medical Image Upload & ML Diagnostics
+                Medical Image Upload &amp; Diagnostics
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-100/70 text-teal-800 border border-teal-200">
-                AI Vision
-              </span>
             </div>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              Upload radiological scans or clinical imagery for computer-vision assisted diagnostic inference.
+              Upload radiological scans or clinical imagery for automated diagnostic analysis.
             </p>
           </div>
         </div>
@@ -338,11 +334,10 @@ export function MedicalImageUpload() {
 
               {/* Scanning visual overlay during analysis */}
               {isAnalyzing && (
-                <div className="absolute inset-0 bg-teal-950/40 backdrop-blur-[1px] flex flex-col items-center justify-center p-4">
-                  <div className="w-full absolute top-0 left-0 h-1 bg-gradient-to-r from-transparent via-teal-400 to-transparent animate-pulse" />
-                  <Loader2 className="h-8 w-8 text-teal-400 animate-spin mb-2" />
-                  <span className="text-xs font-semibold text-teal-100 tracking-wider">
-                    SCANNING TENSORS
+                <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[1px] flex flex-col items-center justify-center p-4">
+                  <Loader2 className="h-8 w-8 text-teal-300 animate-spin mb-2" />
+                  <span className="text-xs font-medium text-teal-100">
+                    Analyzing...
                   </span>
                 </div>
               )}
@@ -381,9 +376,9 @@ export function MedicalImageUpload() {
                     <span className="font-mono text-zinc-900 font-semibold">{selectedFile.type || "DICOM / Custom"}</span>
                   </div>
                   <div className="flex items-center justify-between text-zinc-600">
-                    <span className="text-zinc-500">Pipeline State:</span>
+                    <span className="text-zinc-500">Status:</span>
                     <span className="font-bold text-teal-700">
-                      {isAnalyzing ? "Processing..." : analysisResult ? "Inference Complete" : "Ready for ML Inference"}
+                      {isAnalyzing ? "Processing..." : "Ready"}
                     </span>
                   </div>
                 </div>
@@ -393,7 +388,7 @@ export function MedicalImageUpload() {
                   <div className="space-y-2.5 p-4 bg-teal-50/80 border border-teal-200 rounded-xl shadow-2xs">
                     <div className="flex items-center justify-between text-xs font-bold text-teal-950">
                       <span className="flex items-center gap-1.5">
-                        <Cpu className="h-3.5 w-3.5 text-teal-600 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 text-teal-600 animate-spin" />
                         {analysisStep}
                       </span>
                       <span className="tabular-nums font-mono">{progressPercent}%</span>
@@ -428,8 +423,8 @@ export function MedicalImageUpload() {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4" />
-                      Run Diagnostic ML Model
+                      <Activity className="h-4 w-4" />
+                      Run Diagnostic Analysis
                     </>
                   )}
                 </button>
@@ -446,84 +441,6 @@ export function MedicalImageUpload() {
               </div>
             </div>
           </div>
-
-          {/* Inference Output Report Card */}
-          {analysisResult && (
-            <div className="mt-5 p-6 bg-slate-50/80 border border-slate-200/90 rounded-2xl space-y-4 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  <div>
-                    <h3 className="text-sm font-extrabold text-zinc-900">
-                      Inference Telemetry Result
-                    </h3>
-                    <p className="text-[11px] text-zinc-500 font-mono">
-                      Report Ref: {analysisResult.scanId} • {analysisResult.analyzedAt}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs",
-                    analysisResult.riskLevel.includes("Critical") 
-                      ? "bg-rose-50 text-rose-700 border-rose-200"
-                      : analysisResult.riskLevel.includes("Moderate")
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  )}>
-                    {analysisResult.riskLevel}
-                  </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-teal-50 text-teal-700 border border-teal-200 shadow-2xs tabular-nums">
-                    Confidence: {analysisResult.confidenceScore}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Primary Finding */}
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                  Primary Radiographic Finding
-                </span>
-                <p className="text-xs font-medium text-zinc-800 mt-1.5 bg-white p-3.5 rounded-xl border border-slate-200/90 leading-relaxed shadow-xs">
-                  {analysisResult.primaryFinding}
-                </p>
-              </div>
-
-              {/* Detected Probabilities Table */}
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                  Feature Probability Distribution
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1.5">
-                  {analysisResult.abnormalities.map((item, idx) => (
-                    <div key={idx} className="p-3 bg-white border border-slate-200/90 rounded-xl space-y-1 shadow-xs">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-zinc-800">{item.label}</span>
-                        <span className="font-bold text-teal-700 tabular-nums">{item.probability}%</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-400 truncate">{item.location}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                  Clinical Action Recommendations
-                </span>
-                <ul className="mt-1.5 space-y-1.5 text-xs text-zinc-600 leading-relaxed">
-                  {analysisResult.clinicalRecommendations.map((rec, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <ChevronRight className="h-3.5 w-3.5 text-teal-600 shrink-0 mt-0.5" />
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

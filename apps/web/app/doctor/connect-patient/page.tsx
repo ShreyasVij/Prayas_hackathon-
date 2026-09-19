@@ -57,7 +57,7 @@ export default function ConnectPatientPage() {
             <span>Secure Patient Handshake Protocol</span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-zinc-900 tracking-tight">
-            Connect a Patient Health Vault
+            Connect a Patient
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed max-w-2xl">
             Input the 16-character alphanumeric authorization token provided by the patient to decrypt and stream verified medical history, laboratory tests, and clinical imaging.
@@ -96,7 +96,7 @@ export default function ConnectPatientPage() {
               3
             </div>
             <div className="space-y-1">
-              <h3 className="text-xs font-bold text-zinc-900">Stream Medical Vault</h3>
+              <h3 className="text-xs font-bold text-zinc-900">Access Patient Records</h3>
               <p className="text-[11px] text-zinc-500 leading-relaxed">
                 Access full vitals, past diagnoses, radiological studies, and medication orders.
               </p>

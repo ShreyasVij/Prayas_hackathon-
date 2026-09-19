@@ -4,31 +4,19 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { 
   Stethoscope, 
-  Sparkles, 
-  KeyRound, 
-  User, 
   Calendar as CalendarIcon, 
   Layers, 
-  Clock, 
-  Users, 
-  CheckCircle2, 
   Loader2,
-  FileImage,
-  ArrowUpRight,
-  SlidersHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
-// MODULAR PORTAL COMPONENTS:
-// The three required distinct sections are built as dedicated, reusable modules.
+// MODULAR PORTAL COMPONENTS
 // ============================================================================
 import { MedicalImageUpload } from "./components/MedicalImageUpload";
-import { PatientConnectCTA } from "./components/PatientConnectCTA";
 import { DoctorProfileSection } from "./components/DoctorProfileSection";
 
 // Existing clinical widgets
-import DoctorCodeDisplay from "@/components/DoctorCodeDisplay";
 import GoogleCalendarConnect from "@/components/GoogleCalendarConnect";
 import Calendar from "./patients/components/Calendar";
 import AppointmentCard from "./patients/components/AppointmentCard";
@@ -141,7 +129,7 @@ function DoctorPortalContent() {
             Doctor Workspace & Diagnostic Portal
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 mt-1 leading-relaxed max-w-2xl">
-            Centralized hub for AI medical imaging diagnostics, 16-digit patient authorization, and provider credentials.
+            Centralized hub for medical imaging diagnostics and provider profile.
           </p>
         </div>
 
@@ -172,37 +160,24 @@ function DoctorPortalContent() {
             )}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-teal-600" />
-            <span>Appointments & Schedule</span>
+            <span>Appointments &amp; Schedule</span>
           </button>
         </div>
       </div>
 
-      {/* ─── TAB 1: CORE DOCTOR PORTAL (ZONE 1 & ZONE 2) ──────────────── */}
+      {/* ─── TAB 1: CORE DOCTOR PORTAL ──────────────────────────────────── */}
       {activeTab === "portal" && (
         <div className="space-y-8">
           
-          {/* ZONE 1: PROVIDER OVERVIEW & ACCESS CODE */}
-          <div className="space-y-6">
-            <DoctorCodeDisplay />
-            
-            <section aria-label="Doctor Profile Section">
-              <DoctorProfileSection />
-            </section>
-          </div>
+          {/* ZONE 1: PROVIDER OVERVIEW */}
+          <section aria-label="Doctor Profile Section">
+            <DoctorProfileSection />
+          </section>
 
-          {/* ZONE 2: PATIENT HANDSHAKE CTA & DIAGNOSTIC WORKSTATION */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            
-            {/* COMPACT PATIENT HANDSHAKE CTA (lg:col-span-4) */}
-            <section className="lg:col-span-4 flex flex-col" aria-label="Patient Handshake Flow">
-              <PatientConnectCTA />
-            </section>
-
-            {/* MEDICAL IMAGE UPLOAD & ML DIAGNOSTICS WORKSTATION (lg:col-span-8) */}
-            <section className="lg:col-span-8" aria-label="Medical Image Upload ML Model Trigger Section">
-              <MedicalImageUpload />
-            </section>
-          </div>
+          {/* ZONE 2: DIAGNOSTIC WORKSTATION */}
+          <section aria-label="Medical Image Upload Diagnostics Section">
+            <MedicalImageUpload />
+          </section>
         </div>
       )}
 
