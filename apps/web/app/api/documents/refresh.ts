@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/server/db';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
-import { callOpenRouterSummary } from '@/services/aiClient';
+import { callSummarize } from '@/service/aiClient';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
       results.push({ docId: doc.id, action: 'ocr_needed' });
       continue;
     }
-    // Always send prompt to OpenRouter for summary/advice
-    const summary = await callOpenRouterSummary(ocr.text);
+    const summary = await callSummarize({ structuredData: { raw_text: ocr.text } });
     results.push({ docId: doc.id, summary });
   }
   return NextResponse.json({ results });

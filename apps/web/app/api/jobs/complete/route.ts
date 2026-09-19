@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           status: 'pending',
           priority: 5,
           attempts: 0,
-          payload: { documentId, versionId, ocrText, profileId: payload.profileId },
+          payload: { documentId, versionId, storageKey, ocrText, profileId: payload.profileId },
           createdAt: now,
           updatedAt: now,
         } as any,

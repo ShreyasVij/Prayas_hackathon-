@@ -7,7 +7,7 @@ import type { JobDocument } from '@/../../packages/db/jobs';
 import type { DocumentDocument } from '@/../../packages/db/documents';
 import { createDownloadUrl } from '@/services/storageClient';
 import { logAudit } from '@/lib/server/audit';
-import { callExtract, callExtractMulti, callSummarize } from '@/services/aiClient';
+import { callClassify, callExtract, callExtractMulti, callGenerateTitle, callHealthSummaryPrompt, callSummarize } from '@/service/aiClient';
 import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
 
 function isAuthorized(req: NextRequest): boolean {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   // Process in order: ingest -> extract-structured -> summarize-doc
   const job = await jobsCol.findOneAndUpdate(
-    { status: 'pending', type: { $in: ['ingest', 'extract-structured', 'summarize-doc'] } } as any,
+    { status: 'pending', type: { $in: ['ingest', 'classify', 'extract-structured', 'summarize-doc', 'generate-title', 'history-summary'] } } as any,
     { $set: { status: 'processing', startedAt: now, updatedAt: now } },
     { sort: { priority: -1, createdAt: 1 }, returnDocument: 'after' } as any,
   );
@@ -89,19 +89,42 @@ export async function POST(request: NextRequest) {
         }),
       });
       if (!completeRes.ok) throw new Error(`complete failed: ${completeRes.status}`);
-    } else if (doc.type === 'extract-structured') {
+    } else if (doc.type === 'classify') {
       const payload: any = doc.payload || {};
       const documentId: string | undefined = payload.documentId;
       const ocrText: string | undefined = payload.ocrText;
       if (!documentId || !ocrText) throw new Error('missing documentId or ocrText');
-
-      // Call AI extract with OCR text as base64 file
-      const textBase64 = Buffer.from(ocrText, 'utf-8').toString('base64');
-      const extractRes = await callExtract({ 
-        fileName: `${documentId}-ocr.txt`, 
-        contentBase64: textBase64 
+      const result: any = await callClassify({ text: ocrText });
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+      if (!baseUrl) throw new Error('Base URL not configured');
+      const completeRes = await fetch(`${baseUrl}/api/jobs/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-internal-token': process.env.INTERNAL_AUTH_TOKEN || '' },
+        body: JSON.stringify({
+          id: doc.id,
+          status: 'completed',
+          detectedType: result.detected_type,
+          inferredTags: result.inferred_tags,
+          confidence: result.confidence,
+        }),
       });
-      const docMeta = extractRes || {};
+      if (!completeRes.ok) throw new Error(`complete failed: ${completeRes.status}`);
+    } else if (doc.type === 'extract-structured') {
+      const payload: any = doc.payload || {};
+      const documentId: string | undefined = payload.documentId;
+      const docRecord = documentId ? await docsCol.findOne({ id: documentId } as any) : null;
+      const storageKey: string | undefined = payload.storageKey || (docRecord as any)?.storageKey;
+      if (!documentId || !storageKey) throw new Error('missing documentId or storageKey');
+
+      // Reuse the original document bytes; the FastAPI extract contract accepts
+      // supported document files, not synthetic text-file payloads.
+      const signed = await createDownloadUrl({ storageKey, expiresIn: 900 });
+      const contentBase64 = await toBase64FromUrl(signed);
+      const extractRes = await callExtract({
+        fileName: storageKey.split('/').pop() || `${documentId}.bin`,
+        contentBase64
+      });
+      const docMeta = extractRes?.data || {};
 
       // Complete the job with the extracted metadata
       const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
@@ -115,6 +138,59 @@ export async function POST(request: NextRequest) {
           id: doc.id,
           status: 'completed',
           docMeta: docMeta,
+        }),
+      });
+      if (!completeRes.ok) throw new Error(`complete failed: ${completeRes.status}`);
+    } else if (doc.type === 'generate-title') {
+      const payload: any = doc.payload || {};
+      const documentId: string | undefined = payload.documentId;
+      const ocrText: string | undefined = payload.ocrText;
+      if (!documentId || !ocrText) throw new Error('missing documentId or ocrText');
+      const result: any = await callGenerateTitle({
+        ocrText,
+        docType: payload.docType || 'other',
+        metadata: payload.metadata,
+      });
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+      if (!baseUrl) throw new Error('Base URL not configured');
+      const completeRes = await fetch(`${baseUrl}/api/jobs/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-internal-token': process.env.INTERNAL_AUTH_TOKEN || '' },
+        body: JSON.stringify({
+          id: doc.id,
+          status: 'completed',
+          generatedTitle: result.title,
+          titleConfidence: result.confidence,
+        }),
+      });
+      if (!completeRes.ok) throw new Error(`complete failed: ${completeRes.status}`);
+    } else if (doc.type === 'history-summary') {
+      const profileId: string | undefined = (doc.payload as any)?.profileId;
+      if (!profileId) throw new Error('missing profileId');
+      const profileDocuments = await docsCol.find({ profileId } as any).toArray();
+      const ocrCol = await getCollection<OcrOutputDocument>('ocrOutputs');
+      const ocrRecords = await ocrCol.find({
+        documentId: { $in: profileDocuments.map((item: any) => item.id) },
+      } as any).toArray();
+      const result = await callHealthSummaryPrompt({
+        documentsData: profileDocuments.map((item: any) => ({
+          id: item.id,
+          docType: item.docType,
+          createdAt: item.createdAt,
+          ...(item.metadata || {}),
+        })),
+        ocrTexts: ocrRecords.map((item: any) => item.text).filter(Boolean),
+      });
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+      if (!baseUrl) throw new Error('Base URL not configured');
+      const completeRes = await fetch(`${baseUrl}/api/jobs/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-internal-token': process.env.INTERNAL_AUTH_TOKEN || '' },
+        body: JSON.stringify({
+          id: doc.id,
+          status: 'completed',
+          historySummary: result.summary,
+          confidence: 0.8,
         }),
       });
       if (!completeRes.ok) throw new Error(`complete failed: ${completeRes.status}`);

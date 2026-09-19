@@ -4,7 +4,7 @@ import type { JobDocument, DocumentDocument, OcrOutputDocument } from '@/../../p
 import { getIdentity } from '@/lib/server/auth';
 import { canDownloadDocument } from '@/lib/server/permissions';
 import { randomUUID } from 'crypto';
-import { callOcr } from '@/services/aiClient';
+import { callOcr } from '@/service/aiClient';
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(()=>({}));
