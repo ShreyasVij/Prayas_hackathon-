@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import Any
 
@@ -8,6 +9,8 @@ from .base import ModelProvider
 from ..types import GenerationResult
 from ...core.config import get_settings
 from ...core.safety import ProviderUnavailableError
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiProvider(ModelProvider):
@@ -34,6 +37,12 @@ class GeminiProvider(ModelProvider):
             raise ProviderUnavailableError("google-genai is not installed") from exc
 
         model_name = model or settings.gemini_model
+        logger.info(
+            "Gemini generation started provider=%s model=%s prompt_chars=%d",
+            self.name,
+            model_name,
+            len(prompt),
+        )
         config_kwargs: dict[str, Any] = {
             "temperature": temperature,
             "max_output_tokens": max_output_tokens,
@@ -58,7 +67,18 @@ class GeminiProvider(ModelProvider):
                 )
                 content = str(getattr(response, "text", "") or "").strip()
                 if not content:
+                    logger.warning(
+                        "Gemini generation returned empty content provider=%s model=%s",
+                        self.name,
+                        model_name,
+                    )
                     raise ProviderUnavailableError("Gemini returned empty content")
+                logger.info(
+                    "Gemini generation completed provider=%s model=%s response_chars=%d",
+                    self.name,
+                    model_name,
+                    len(content),
+                )
                 return GenerationResult(
                     text=content,
                     provider=self.name,
@@ -69,6 +89,13 @@ class GeminiProvider(ModelProvider):
                 raise
             except Exception as exc:
                 last_error = exc
+                logger.warning(
+                    "Gemini generation attempt failed provider=%s model=%s attempt=%d error_type=%s",
+                    self.name,
+                    model_name,
+                    attempt + 1,
+                    type(exc).__name__,
+                )
                 if attempt < settings.runtime_retries:
                     await asyncio.sleep(0.5 * (2 ** attempt))
 

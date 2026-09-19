@@ -1,41 +1,18 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from ..core.config import get_settings
 from ..core.safety import clean_string_list, clean_text, non_diagnostic_disclaimer, parse_json_value
 from ..runtime.client import RuntimeClient
 
+logger = logging.getLogger(__name__)
+
 
 def _template() -> str:
     return (get_settings().prompt_dir / "summarization" / "summary.txt").read_text(encoding="utf-8")
-
-
-def _fallback(structured_data: dict[str, Any]) -> dict[str, Any]:
-    findings: list[str] = []
-    for vital in (structured_data.get("vitals") or [])[:8]:
-        if isinstance(vital, dict) and vital.get("label") is not None and vital.get("value") is not None:
-            value = f"{vital['label']}: {vital['value']}"
-            if vital.get("unit"):
-                value += f" {vital['unit']}"
-            findings.append(value)
-    diagnosis = clean_text(structured_data.get("diagnosis"))
-    summary = "The document contains structured medical information, but a generated interpretation is not available right now. Review the recorded findings with a licensed healthcare professional."
-    if diagnosis:
-        summary = f"The document records: {diagnosis}. A generated interpretation is not available right now; review the record with a licensed healthcare professional."
-    return {
-        "summary": {
-            "disclaimer": non_diagnostic_disclaimer(),
-            "in_depth_summary": summary,
-            "key_findings": findings,
-            "recommendations": [],
-            "possible_follow_ups": [],
-            "lifestyle_advice": [],
-        },
-        "explanations": [non_diagnostic_disclaimer()],
-        "confidence": 0.0,
-    }
 
 
 class SummarizationService:
@@ -50,13 +27,18 @@ class SummarizationService:
                 prompt,
                 system_instruction="You produce careful, non-diagnostic medical document summaries using only supplied evidence.",
                 temperature=0.2,
-                max_output_tokens=1200,
+                max_output_tokens=2400,
             )
             data = parse_json_value(result.text)
             if not isinstance(data, dict):
                 raise ValueError("summary output is not an object")
-        except Exception:
-            return _fallback(structured_data)
+        except Exception as exc:
+            logger.warning(
+                "Document summarization fell back provider=%s error_type=%s",
+                get_settings().ai_runtime_provider,
+                type(exc).__name__,
+            )
+            raise
 
         summary = {
             "disclaimer": clean_text(data.get("disclaimer")) or non_diagnostic_disclaimer(),
