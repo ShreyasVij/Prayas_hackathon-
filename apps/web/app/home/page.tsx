@@ -7,8 +7,6 @@ import Stats from "@/app/home/Stats";
 import Pricing from "@/app/home/Pricing";
 import Education from "@/app/home/Education";
 
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);

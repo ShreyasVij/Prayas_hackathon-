@@ -335,13 +335,20 @@ const DoctorLocationMap: React.FC<DoctorLocationMapProps> = ({
       setError(null);
 
       // STEP 1: Get user's GPS location FIRST
-      const location = await getUserGPSLocation();
-
-      if (!location) {
-        setError('Unable to access your location. Please enable GPS/location services and refresh the page.');
-        setLoading(false);
-        return;
+      let rawLoc: any = null;
+      try {
+        rawLoc = await getUserGPSLocation();
+      } catch (err) {
+        console.warn('[DoctorLocationMap] GPS lookup failed or denied, falling back to central coordinates:', err);
       }
+
+      const lat = typeof rawLoc?.lat === 'number' ? rawLoc.lat : (typeof rawLoc?.latitude === 'number' ? rawLoc.latitude : 28.6139);
+      const lng = typeof rawLoc?.lng === 'number' ? rawLoc.lng : (typeof rawLoc?.longitude === 'number' ? rawLoc.longitude : 77.2090);
+
+      const location: UserLocation = {
+        latitude: isNaN(lat) ? 28.6139 : lat,
+        longitude: isNaN(lng) ? 77.2090 : lng,
+      };
 
       setUserLocation(location);
 
@@ -370,9 +377,16 @@ const DoctorLocationMap: React.FC<DoctorLocationMapProps> = ({
       if (mapInstanceRef.current || !mapRef.current) return;
 
       try {
+        const safeLat = typeof location?.latitude === 'number' && !isNaN(location.latitude)
+          ? location.latitude
+          : (typeof (location as any)?.lat === 'number' && !isNaN((location as any).lat) ? (location as any).lat : 28.6139);
+        const safeLng = typeof location?.longitude === 'number' && !isNaN(location.longitude)
+          ? location.longitude
+          : (typeof (location as any)?.lng === 'number' && !isNaN((location as any).lng) ? (location as any).lng : 77.2090);
+
         // STEP 2: Create map centered on user's location
         const map = new google.maps.Map(mapRef.current, {
-          center: { lat: location.latitude, lng: location.longitude },
+          center: { lat: safeLat, lng: safeLng },
           zoom: 13,
           mapTypeControl: true,
           fullscreenControl: true,
@@ -383,7 +397,7 @@ const DoctorLocationMap: React.FC<DoctorLocationMapProps> = ({
 
         // Add user location marker (blue dot)
         userMarkerRef.current = new google.maps.Marker({
-          position: { lat: location.latitude, lng: location.longitude },
+          position: { lat: safeLat, lng: safeLng },
           map: map,
           title: 'Your Location',
           icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',

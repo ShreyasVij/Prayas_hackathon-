@@ -20,6 +20,14 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
+      "@/../../packages/*": ["./packages/*"],
+      "../../packages/*": ["./packages/*"],
+      "@/packages/*": ["./packages/*"],
+      "@/services/*": ["./service/*"],
+      "@db/*": ["./packages/db/*"],
+      "@db": ["./packages/db/index.ts"],
+      "@auth/*": ["./packages/auth/*"],
+      "@auth": ["./packages/auth/index.ts"],
       "@/*": ["./*"]
     },
     "plugins": [

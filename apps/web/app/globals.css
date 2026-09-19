@@ -4,40 +4,56 @@
 
 @layer base {
   :root {
-    --background: 40 33% 98%;
-    --foreground: 215 25% 17%;
+    /* Clinical Trust — Teal-600 primary brand */
+    --background: 210 20% 98%;        /* slate-50 equivalent */
+    --foreground: 224 71% 4%;         /* zinc-900 */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 17%;
+    --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 17%;
-    --primary: 187 35% 42%;
+    --popover-foreground: 224 71% 4%;
+
+    /* Primary: teal-600 */
+    --primary: 175 84% 32%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 187 25% 94%;
-    --secondary-foreground: 187 35% 32%;
+
+    /* Secondary: teal-50 tint */
+    --secondary: 175 60% 95%;
+    --secondary-foreground: 175 84% 22%;
+
+    /* Muted */
     --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 187 25% 92%;
-    --accent-foreground: 187 35% 32%;
+    --muted-foreground: 215 14% 47%;
+
+    /* Accent: teal-100 */
+    --accent: 175 60% 94%;
+    --accent-foreground: 175 84% 22%;
+
+    /* Emergency: STRICTLY rose-600 only for critical alerts */
     --destructive: 0 65% 51%;
     --destructive-foreground: 0 0% 100%;
+
+    /* Status semantic */
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 20%;
     --success: 152 45% 42%;
     --success-foreground: 0 0% 100%;
-    --emergency: 0 72% 51%;
+    --emergency: 347 77% 50%;        /* rose-600 */
     --emergency-foreground: 0 0% 100%;
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 187 35% 42%;
-    --radius: 0.5rem;
-    --sidebar-background: 210 25% 97%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 175 84% 32%;
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 210 20% 97%;
     --sidebar-foreground: 215 25% 27%;
-    --sidebar-primary: 187 35% 42%;
+    --sidebar-primary: 175 84% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 187 25% 92%;
-    --sidebar-accent-foreground: 187 35% 32%;
+    --sidebar-accent: 175 60% 94%;
+    --sidebar-accent-foreground: 175 84% 22%;
     --sidebar-border: 214 20% 91%;
-    --sidebar-ring: 187 35% 42%;
+    --sidebar-ring: 175 84% 32%;
   }
 
   .dark {
@@ -47,8 +63,8 @@
     --card-foreground: 210 20% 95%;
     --popover: 222 20% 13%;
     --popover-foreground: 210 20% 95%;
-    --primary: 187 40% 50%;
-    --primary-foreground: 222 20% 10%;
+    --primary: 175 75% 48%;
+    --primary-foreground: 222 20% 8%;
     --secondary: 217 20% 20%;
     --secondary-foreground: 210 20% 90%;
     --muted: 217 20% 18%;
@@ -61,19 +77,19 @@
     --warning-foreground: 38 92% 95%;
     --success: 152 40% 40%;
     --success-foreground: 0 0% 100%;
-    --emergency: 0 70% 50%;
+    --emergency: 347 77% 50%;
     --emergency-foreground: 0 0% 100%;
     --border: 217 20% 22%;
     --input: 217 20% 22%;
-    --ring: 187 40% 50%;
+    --ring: 175 75% 48%;
     --sidebar-background: 222 20% 8%;
     --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 187 40% 50%;
+    --sidebar-primary: 175 75% 48%;
     --sidebar-primary-foreground: 222 20% 10%;
     --sidebar-accent: 217 20% 18%;
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 217 20% 18%;
-    --sidebar-ring: 187 40% 50%;
+    --sidebar-ring: 175 75% 48%;
   }
 
   * {
@@ -82,31 +98,226 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1;
   }
 }
 
+/* ─── Keyframe Animations ─────────────────────────────────── */
 @layer utilities {
-  .text-medical-note { @apply text-sm text-muted-foreground italic; }
-  .text-ai-disclaimer { @apply text-xs text-muted-foreground bg-muted px-2 py-1 rounded inline-block; }
-  .status-normal { @apply text-success bg-success/10 px-2 py-0.5 rounded text-sm font-medium; }
-  .status-warning { @apply text-warning-foreground bg-warning/15 px-2 py-0.5 rounded text-sm font-medium; }
-  .status-alert { @apply text-destructive bg-destructive/10 px-2 py-0.5 rounded text-sm font-medium; }
-  .emergency-container { @apply bg-emergency/5 border-2 border-emergency min-h-screen; }
-  .emergency-header { @apply bg-emergency text-emergency-foreground py-4 px-6 text-center font-semibold text-lg; }
-  
+
+  @keyframes cursor-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  @keyframes shimmer-slide {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+  }
+
   @keyframes slide-up {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
+    from { transform: translateY(12px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 hsl(var(--emergency) / 0.4); }
+    70%  { box-shadow: 0 0 0 10px hsl(var(--emergency) / 0); }
+    100% { box-shadow: 0 0 0 0   hsl(var(--emergency) / 0); }
+  }
+
+  /* Streaming text blinking cursor */
+  .ai-stream-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: hsl(var(--primary));
+    border-radius: 1px;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: cursor-blink 1s step-end infinite;
+  }
+
+  /* AI Badge shimmer overlay */
+  .ai-badge-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
+    animation: shimmer-slide 3s ease-in-out infinite;
+    border-radius: inherit;
+  }
+
+  /* Bento grid cell base */
+  .bento-cell {
+    @apply bg-white rounded-2xl border border-border overflow-hidden;
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .bento-cell:hover {
+    box-shadow: 0 4px 16px 0 rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+    transform: translateY(-1px);
+  }
+
+  /* Card spotlight radial */
+  .card-spotlight-glow {
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(var(--primary) / 0.06) 0%, transparent 65%);
+  }
+
+  /* Emergency pulse ring for QR box */
+  .emergency-pulse {
+    animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Status pills */
+  .status-normal    { @apply text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-emerald-200; }
+  .status-warning   { @apply text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-amber-200; }
+  .status-alert     { @apply text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-rose-200; }
+  .text-medical-note { @apply text-sm text-muted-foreground italic; }
+  .text-ai-disclaimer { @apply text-xs text-muted-foreground bg-muted px-2 py-1 rounded-lg inline-block; }
+
+  /* Emergency utility classes */
+  .emergency-container { @apply bg-emergency/5 border-2 border-emergency min-h-screen; }
+  .emergency-header    { @apply bg-emergency text-emergency-foreground py-4 px-6 text-center font-semibold text-lg; }
+
+  /* Slide-up animation utility */
+  .animate-slide-up { animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+  .animate-fade-in  { animation: fade-in 0.4s ease; }
+
+  /* ── Bento Grid Responsive ───────────────────────────────── */
+  /* On mobile, collapse grid-area layout to single column stack */
+  @media (max-width: 767px) {
+    .bento-cell[style*="grid-area: hero"],
+    .bento-cell[style*="grid-area: qr"],
+    .bento-cell[style*="grid-area: chart"],
+    .bento-cell[style*="grid-area: docs"] {
+      grid-area: unset !important;
+      grid-column: 1 / -1 !important;
     }
-    to {
-      transform: translateY(0);
-      opacity: 1;
+
+    /* Also reset the parent grid to single column */
+    .grid[style*="grid-template-areas"] {
+      grid-template-columns: 1fr !important;
+      grid-template-areas: none !important;
     }
   }
-  
-  .animate-slide-up {
-    animation: slide-up 0.3s ease-out;
+
+  /* ── Clinical Trust Component Bridges ───────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium transition-all rounded-xl cursor-pointer disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-sm {
+    @apply px-3.5 py-1.5 text-xs;
+  }
+  .btn-danger {
+    @apply bg-teal-600 hover:bg-teal-700 text-white shadow-sm border border-transparent;
+  }
+  .btn-outline-danger {
+    @apply bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 hover:border-teal-300;
+  }
+  .btn-outline-secondary {
+    @apply bg-white hover:bg-slate-100 text-zinc-700 border border-slate-300 shadow-sm;
+  }
+  .btn-secondary {
+    @apply bg-slate-100 hover:bg-slate-200 text-zinc-800 border border-slate-200;
+  }
+  .card {
+    @apply bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden text-zinc-900;
+  }
+  .card-body {
+    @apply p-5 sm:p-6;
+  }
+  .form-control, .form-select {
+    @apply w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all;
+  }
+  .form-label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5;
+  }
+  .table {
+    @apply w-full text-left text-sm border-collapse;
+  }
+  .table th {
+    @apply py-3 px-4 text-xs font-bold uppercase tracking-wider text-zinc-500 bg-slate-50 border-b border-slate-200;
+  }
+  .table td {
+    @apply py-3.5 px-4 text-zinc-800 border-b border-slate-100;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider;
+  }
+  .alert {
+    @apply p-4 rounded-xl text-sm border font-medium;
+  }
+  .alert-secondary {
+    @apply bg-slate-50 border-slate-200 text-zinc-700;
+  }
+  .alert-danger {
+    @apply bg-rose-50 border-rose-200 text-rose-700;
+  }
+  .alert-info {
+    @apply bg-teal-50 border-teal-200 text-teal-800;
+  }
+  .d-none {
+    display: none !important;
+  }
+  .d-flex {
+    display: flex !important;
+  }
+  .flex-column {
+    flex-direction: column !important;
+  }
+  .justify-content-between {
+    justify-content: space-between !important;
+  }
+  .justify-content-center {
+    justify-content: center !important;
+  }
+  .align-items-center {
+    align-items: center !important;
+  }
+  .align-items-start {
+    align-items: flex-start !important;
+  }
+  .gap-2 {
+    gap: 0.5rem !important;
+  }
+  .gap-3 {
+    gap: 0.75rem !important;
+  }
+  .gap-4 {
+    gap: 1rem !important;
+  }
+  .w-100 {
+    width: 100% !important;
+  }
+  .h-100 {
+    height: 100% !important;
+  }
+  .text-muted {
+    @apply text-zinc-500;
+  }
+  .row {
+    @apply flex flex-wrap -mx-3;
+  }
+  .col-12 {
+    @apply w-full px-3;
+  }
+  .col-md-6 {
+    @apply w-full md:w-1/2 px-3;
+  }
+  .col-md-4 {
+    @apply w-full md:w-1/3 px-3;
+  }
+  .col-lg-5 {
+    @apply w-full lg:w-5/12 px-3;
+  }
+  .col-lg-7 {
+    @apply w-full lg:w-7/12 px-3;
   }
 }

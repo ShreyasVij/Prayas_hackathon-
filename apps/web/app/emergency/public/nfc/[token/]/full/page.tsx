@@ -6,10 +6,10 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
-export default function FullEmergencyProfilePage() {
+function FullEmergencyProfileContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const token = params.token as string;
@@ -295,5 +295,13 @@ export default function FullEmergencyProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FullEmergencyProfilePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500">Loading Full Profile...</div>}>
+      <FullEmergencyProfileContent />
+    </Suspense>
   );
 }

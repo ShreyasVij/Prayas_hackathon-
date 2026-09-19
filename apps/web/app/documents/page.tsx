@@ -392,18 +392,47 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="container py-3">
-      <header className="mb-2">
-        <h1 className="h5 m-0">Documents</h1>
-        <div className="text-muted small">Upload, review, and manage your medical files. Status and metadata stay visible.</div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 tracking-tight">Health Documents</h1>
+          <p className="text-sm text-zinc-500 mt-1">Upload, review, and manage your encrypted medical records.</p>
+        </div>
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200">
+          <button
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              viewMode === 'scan'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+            onClick={() => setViewMode('scan')}
+          >
+            Scan &amp; Upload
+          </button>
+          <button
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              viewMode === 'view'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+            onClick={() => { setViewMode('view'); refreshDocuments('active'); }}
+          >
+            Scanned Records ({documents.length})
+          </button>
+          <button
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              viewMode === 'bin'
+                ? 'bg-rose-600 text-white shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+            onClick={() => { setViewMode('bin'); refreshDocuments('archived'); }}
+          >
+            Bin
+          </button>
+        </div>
       </header>
       <div className="row g-4">
         <div className="col-12">
-          <div className="d-flex gap-2 mb-3">
-            <button className={`btn btn-sm ${viewMode==='scan'?'btn-danger':'btn-outline-danger'}`} onClick={()=>setViewMode('scan')}>Scan Documents</button>
-            <button className={`btn btn-sm ${viewMode==='view'?'btn-danger':'btn-outline-danger'}`} onClick={()=>{setViewMode('view'); refreshDocuments('active');}}>View Scanned Documents</button>
-            <button className={`btn btn-sm ${viewMode==='bin'?'btn-danger':'btn-outline-danger'}`} onClick={()=>{setViewMode('bin'); refreshDocuments('archived');}}>Bin</button>
-          </div>
 
           {/* Search and Filters - Only show in view/bin modes */}
           {(viewMode === 'view' || viewMode === 'bin') && (
@@ -531,7 +560,7 @@ export default function DocumentsPage() {
                     Choose Files
                     <input
                       type="file"
-                      className="d-none"
+                      className="hidden"
                       ref={fileInputRef}
                       multiple
                       onChange={(e) => handleSelect(e.target.files ? Array.from(e.target.files) : [])}
