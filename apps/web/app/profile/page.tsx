@@ -1,7 +1,7 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -29,7 +29,9 @@ import {
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const { data: session, status, update: updateSession } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const { theme, setTheme } = useTheme();
 
   /* ================= FORM STATE ================= */
@@ -85,14 +87,18 @@ export default function ProfilePage() {
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session?.user) {
-      setForm((prev) => ({
-        ...prev,
-        name: prev.name || session.user?.name || "",
-        email: prev.email || session.user?.email || "",
-      }));
-    }
-  }, [session]);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSessionUser(user);
+        setForm((prev) => ({
+          ...prev,
+          name: prev.name || user.user_metadata?.name || "",
+          email: prev.email || user.email || "",
+        }));
+      }
+      setAuthLoading(false);
+    });
+  }, []);
 
   // Extract dominant color from image
   const extractDominantColor = (imageUrl: string) => {
@@ -227,10 +233,10 @@ export default function ProfilePage() {
       }
     }
 
-    if (status === "authenticated") {
+    if (sessionUser) {
       loadProfile();
     }
-  }, [status, setTheme]);
+  }, [sessionUser, setTheme]);
 
   // Handle Diet sentence addition
   const addDietSentence = (meal: "breakfast" | "lunch" | "dinner") => {
@@ -380,11 +386,6 @@ export default function ProfilePage() {
         setSaveToast("Profile details and Supabase JSON updated successfully!");
         setUserMetadata((prev) => ({ ...prev, supabaseSynced: true }));
         setForm((prev) => ({ ...prev, diet: currentDiet, profileImage: null }));
-        if (updateSession) {
-          try {
-            await updateSession({ onboardingCompleted: true, isNewUser: false });
-          } catch {}
-        }
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("profile:updated"));
         }
@@ -414,7 +415,8 @@ export default function ProfilePage() {
         return;
       }
       alert("Your profile and all associated data have been permanently deleted.");
-      await signOut({ callbackUrl: "/home" });
+      await supabase.auth.signOut();
+      window.location.href = "/home";
     } catch (error) {
       console.error("Failed to delete profile:", error);
       alert("An error occurred while deleting your profile.");
@@ -424,7 +426,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (status === "loading") {
+  if (authLoading) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center text-sm text-muted-foreground">
         Loading patient profile...
@@ -470,7 +472,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {!session ? (
+        {!sessionUser ? (
           <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-6 text-sm text-amber-800 dark:text-amber-300">
             You are currently not signed in.{" "}
             <Link href="/auth" className="font-bold underline ml-1">

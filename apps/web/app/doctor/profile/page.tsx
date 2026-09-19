@@ -1,7 +1,7 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
 import { 
   Stethoscope, 
@@ -23,7 +23,9 @@ import ConfirmModal from "../../../components/ui/ConfirmModal";
 import LocationPinMap from "@/components/LocationPinMap";
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [mounted, setMounted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -71,14 +73,18 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (session?.user) {
-      setForm((prev) => ({
-        ...prev,
-        name: session.user.name || "",
-        email: session.user.email || "",
-      }));
-    }
-  }, [session]);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSessionUser(user);
+        setForm((prev) => ({
+          ...prev,
+          name: prev.name || user.user_metadata?.name || "",
+          email: prev.email || user.email || "",
+        }));
+      }
+      setAuthLoading(false);
+    });
+  }, []);
 
   // Hydrate form from saved profile on load
   useEffect(() => {
@@ -113,10 +119,10 @@ export default function ProfilePage() {
         // noop: fallback
       }
     }
-    if (status === "authenticated") {
+    if (sessionUser) {
       loadProfile();
     }
-  }, [status]);
+  }, [sessionUser]);
 
   function genderEnumToLabel(g?: string | null): string {
     switch ((g || "").toLowerCase()) {
@@ -281,7 +287,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (!mounted || status === "loading") {
+  if (!mounted || authLoading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 text-teal-600 animate-spin mb-3" />
@@ -329,7 +335,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {!session ? (
+        {!sessionUser ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />

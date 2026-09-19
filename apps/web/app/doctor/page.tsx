@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 // ============================================================================
 import { MedicalImageUpload } from "./components/MedicalImageUpload";
 import { DoctorProfileSection } from "./components/DoctorProfileSection";
+import { PatientReportsList } from "./components/PatientReportsList";
 
 // Existing clinical widgets
 import GoogleCalendarConnect from "@/components/GoogleCalendarConnect";
@@ -37,7 +38,7 @@ interface Appointment {
 
 function DoctorPortalContent() {
   // Navigation tab switcher: defaults to the Doctor Workspace & Diagnostics
-  const [activeTab, setActiveTab] = useState<"portal" | "schedule">("portal");
+  const [activeTab, setActiveTab] = useState<"portal" | "reports" | "schedule">("portal");
 
   // State for appointments in case doctor views the Schedule tab
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -151,6 +152,20 @@ function DoctorPortalContent() {
 
           <button
             type="button"
+            onClick={() => setActiveTab("reports")}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+              activeTab === "reports"
+                ? "bg-white text-teal-800 shadow-xs border border-slate-200/90"
+                : "text-zinc-600 hover:text-zinc-900"
+            )}
+          >
+            <Layers className="h-3.5 w-3.5 text-teal-600" />
+            <span>Patient Reports</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab("schedule")}
             className={cn(
               "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
@@ -177,6 +192,15 @@ function DoctorPortalContent() {
           {/* ZONE 2: DIAGNOSTIC WORKSTATION */}
           <section aria-label="Medical Image Upload Diagnostics Section">
             <MedicalImageUpload />
+          </section>
+        </div>
+      )}
+
+      {/* ─── TAB 2: PATIENT AI REPORTS ───────────────────────────────────── */}
+      {activeTab === "reports" && (
+        <div className="space-y-8">
+          <section aria-label="Patient AI Reports Section">
+            <PatientReportsList />
           </section>
         </div>
       )}

@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { supabaseAdmin, ensureBucketExists } from "@/lib/server/supabase";
 import { getCollection } from "@/lib/server/db";
 import type { UserDocument } from "@db/users";
@@ -26,8 +27,9 @@ function extForMime(m: string): string {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !session.user.id) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!user?.email || !authUser.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,13 +47,13 @@ export async function POST(req: Request) {
     }
 
     const users = await getCollection<UserDocument>("users");
-    const dbUser = await users.findOne({ email: session.user.email });
+    const dbUser = await users.findOne({ email: authUser.email });
     const previousUrl = dbUser?.profile?.profileImageUrl || null;
 
     const sb = supabaseAdmin();
     await ensureBucketExists(BUCKET, true);
     const ext = file.name.includes(".") ? (file.name.split(".").pop() || extForMime(file.type)) : extForMime(file.type);
-    const objectPath = `${session.user.id}/${Date.now()}.${ext}`;
+    const objectPath = `${authUser.id}/${Date.now()}.${ext}`;
     const arrayBuf = await file.arrayBuffer();
 
     const { error: uploadErr } = await sb.storage
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     await users.updateOne(
-      { email: session.user.email },
+      { email: authUser.email },
       { $set: { "profile.profileImageUrl": publicUrl, "profile.profileImageName": file.name, updatedAt: new Date() } }
     );
 

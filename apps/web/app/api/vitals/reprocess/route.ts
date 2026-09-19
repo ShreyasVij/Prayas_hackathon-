@@ -10,18 +10,22 @@ import type { OcrOutputDocument } from "@/../../packages/db/index";
 import { reprocessLogger } from "@/lib/server/logger";
 import type { ProfileDocument } from "@/../../packages/db/profiles";
 import type { DocumentDocument } from "@/../../packages/db/documents";
-import { getIdentity } from "@/lib/server/auth";
+
 
 // Accepts optional profileId and status query params for flexibility
 export async function POST(request: NextRequest) {
   reprocessLogger.info('Starting document reprocessing');
   try {
-    const { actorId, role } = await getIdentity();
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!actorId || actorId === 'anon') {
+    if (!authUser?.id) {
       reprocessLogger.warn('Unauthorized - no session');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const actorId = authUser.id;
+    const role = "user";
 
     const userId = actorId;
     console.error('[REPROCESS SESSION]', { 

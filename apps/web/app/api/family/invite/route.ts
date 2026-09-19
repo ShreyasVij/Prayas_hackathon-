@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import crypto from "crypto";
 import { ObjectId } from "mongodb";
 
@@ -11,9 +12,10 @@ import { sendMail } from "@/lib/server/mail";
 
 export async function POST(req: Request) {
   const { email } = await req.json();
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!session?.user?.email) {
+  if (!authUser?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,7 +23,7 @@ export async function POST(req: Request) {
   const families = await getFamiliesCollection();
   const invites = await getFamilyInvitesCollection();
 
-  const owner = await users.findOne({ email: session.user.email });
+  const owner = await users.findOne({ email: authUser.email });
   if (!owner || owner.familyRole !== "owner") {
     return NextResponse.json({ error: "Only owner can invite" }, { status: 403 });
   }

@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { UserDocument } from "@db/users";
 import { google } from "googleapis";
@@ -12,14 +13,15 @@ import { google } from "googleapis";
  */
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify user is a doctor
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
     if (!user?.roles?.includes("doctor")) {
       return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
@@ -37,7 +39,7 @@ export async function GET(req: Request) {
       access_type: "offline", // Get refresh token
       scope: ["https://www.googleapis.com/auth/calendar"],
       prompt: "consent", // Force consent screen to get refresh token
-      state: session.user.email, // Pass email to identify doctor in callback
+      state: authUser.email, // Pass email to identify doctor in callback
     });
 
     // Redirect to Google consent screen

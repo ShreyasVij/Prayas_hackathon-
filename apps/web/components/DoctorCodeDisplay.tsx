@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { createClient } from "@/utils/supabase/client";
 import { Copy, CheckCircle2, AlertCircle, KeyRound, Stethoscope, Loader2 } from "lucide-react";
 
 export default function DoctorCodeDisplay() {
-  const { data: session } = useSession();
+  const supabase = createClient();
   const [doctorCode, setDoctorCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -41,14 +41,17 @@ export default function DoctorCodeDisplay() {
         setLoading(false);
       }
     }
-
-    if (session) {
-      fetchDoctorCode();
-    } else {
-      setDoctorCode(null);
-      setLoading(false);
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        fetchDoctorCode();
+      } else {
+        setDoctorCode(null);
+        setLoading(false);
+      }
     }
-  }, [session]);
+    init();
+  }, []);
 
   const handleCopy = () => {
     if (doctorCode) {

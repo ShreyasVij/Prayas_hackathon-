@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import DocumentReviewForm, { ExtractedDocument } from "@/components/DocumentReviewForm";
 
 type Status = "idle" | "uploading" | "processing" | "review" | "error";
 
 export default function DocumentsPage() {
-  const { status: authStatus } = useSession();
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.push("/auth?callbackUrl=/documents");
-    }
-  }, [authStatus, router]);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.push("/auth?callbackUrl=/documents");
+      }
+    });
+  }, [router]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -23,8 +25,9 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string>("");
   const [aiData, setAiData] = useState<ExtractedDocument | null>(null);
   const [reviewOpen, setReviewOpen] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'scan' | 'view' | 'bin'>('scan');
+  const [viewMode, setViewMode] = useState<'scan' | 'view' | 'bin' | 'diagnostics'>('scan');
   const [documents, setDocuments] = useState<any[]>([]);
+  const [diagnostics, setDiagnostics] = useState<any[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const [message, setMessage] = useState<string>("");
@@ -214,6 +217,17 @@ export default function DocumentsPage() {
   }
 
   useEffect(() => { refreshDocuments('active'); }, []);
+
+  async function refreshDiagnostics() {
+    try {
+      setIsRefreshing(true);
+      const res = await fetch(`/api/patient/diagnostics`, { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Fetch failed');
+      setDiagnostics(data?.records || []);
+    } catch (e: any) {
+    } finally { setIsRefreshing(false); }
+  }
 
   useEffect(() => {
     // Reset selections when switching modes
@@ -448,6 +462,16 @@ export default function DocumentsPage() {
             onClick={() => { setViewMode('bin'); refreshDocuments('archived'); }}
           >
             Bin
+          </button>
+          <button
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              viewMode === 'diagnostics'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+            onClick={() => { setViewMode('diagnostics'); refreshDiagnostics(); }}
+          >
+            Diagnostics
           </button>
         </div>
       </header>
@@ -779,6 +803,67 @@ export default function DocumentsPage() {
           </div>
         </div>
         )}
+
+        {viewMode === 'diagnostics' && (
+        <div className="col-12">
+          <div className="border rounded p-3 bg-white shadow-sm">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="h6 m-0">Diagnostic Verification Log</h2>
+              <button className="btn btn-sm btn-outline-secondary" onClick={()=>refreshDiagnostics()} disabled={isRefreshing}>
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Document Type</th>
+                    <th scope="col">AI Disease</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Doctor Review</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diagnostics.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-muted text-center py-4">No diagnostic records found</td>
+                    </tr>
+                  ) : (
+                    diagnostics.map((d) => (
+                      <tr key={d.id}>
+                        <td className="text-muted">{new Date(d.created_at).toLocaleString()}</td>
+                        <td>{d.document_type}</td>
+                        <td>{d.disease_id}</td>
+                        <td>
+                          {d.status === 'pending' ? (
+                            <span className="badge bg-warning text-dark">Pending</span>
+                          ) : (
+                            <span className="badge bg-success">Reviewed</span>
+                          )}
+                        </td>
+                        <td>
+                          {d.status === 'reviewed' ? (
+                            <div className="small">
+                              <div className="fw-semibold text-zinc-900">
+                                {d.is_accurate ? '✅ Accurate' : '❌ False'}
+                              </div>
+                              <div className="text-muted mt-1">{d.doctor_review || 'No notes'}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted small">Awaiting doctor review</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        )}
+
         {viewMode === 'view' && (
         <div className="col-12">
           <div className="border rounded p-3 bg-white">

@@ -2,10 +2,8 @@ import React from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import './globals.css';
 
-import Providers from "./api/auth/[...nextauth]/providers";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+import { createClient } from "@/utils/supabase/server";
 
 export const metadata = {
   title: 'MEDILOCKER',
@@ -13,9 +11,18 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
-  const userName = (session as any)?.user?.name || (session as any)?.user?.email || undefined;
-  const role = (((session as any)?.user?.roles || [])[0] || 'patient') as 'patient' | 'doctor' | 'admin';
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let role: 'patient' | 'doctor' | 'admin' = 'patient';
+  let userName = user?.email || undefined;
+
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role) {
+      role = profile.role as any;
+    }
+  }
   
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   
@@ -32,13 +39,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body className="min-h-screen bg-background text-foreground transition-colors duration-300">
-        <Providers>
-          <ThemeProvider>
-            <AppLayout userName={userName} role={role}>
-              {children}
-            </AppLayout>
-          </ThemeProvider>
-        </Providers>
+        <ThemeProvider>
+          <AppLayout userName={userName} role={role}>
+            {children}
+          </AppLayout>
+        </ThemeProvider>
       </body>
     </html>
   );

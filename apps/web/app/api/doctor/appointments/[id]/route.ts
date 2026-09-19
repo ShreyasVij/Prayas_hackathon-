@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import { createOAuth2Client, deleteCalendarEvent } from "@/lib/server/googleCalendar";
 import type { AppointmentDocument, DoctorDocument, DoctorFileDocument } from "@db/doctors";
@@ -13,14 +14,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has doctor role
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
     if (!user?.roles?.includes("doctor")) {
       return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
@@ -30,7 +32,7 @@ export async function PATCH(
     const doctors = await getCollection<DoctorDocument>("doctors");
     const doctor = await doctors.findOne({ 
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });
@@ -114,14 +116,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has doctor role
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
     if (!user?.roles?.includes("doctor")) {
       return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
@@ -131,7 +134,7 @@ export async function DELETE(
     const doctors = await getCollection<DoctorDocument>("doctors");
     const doctor = await doctors.findOne({ 
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });

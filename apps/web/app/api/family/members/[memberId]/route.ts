@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { ObjectId } from "mongodb";
 import { getUsersCollection } from "@/lib/models/User";
 import { getFamiliesCollection } from "@/lib/server/Family";
@@ -21,8 +22,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ memberId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -37,7 +39,7 @@ export async function DELETE(
   const families = await getFamiliesCollection();
 
   // Get current user
-  const currentUser = await users.findOne({ email: session.user.email });
+  const currentUser = await users.findOne({ email: authUser.email });
   if (!currentUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
@@ -203,8 +205,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ memberId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -217,7 +220,7 @@ export async function GET(
   const users = await getUsersCollection();
   const families = await getFamiliesCollection();
 
-  const currentUser = await users.findOne({ email: session.user.email });
+  const currentUser = await users.findOne({ email: authUser.email });
   if (!currentUser || !currentUser.familyId) {
     return NextResponse.json({ error: "Not part of a family" }, { status: 400 });
   }

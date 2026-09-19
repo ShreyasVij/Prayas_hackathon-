@@ -1,37 +1,39 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import { useEffect, Suspense, useState, useRef } from "react";
 import { Stethoscope, Loader2 } from "lucide-react";
 
 function DoctorAuthBridgeContent() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createClient();
   const [authorizing, setAuthorizing] = useState(false);
+  const [isUnauthenticated, setIsUnauthenticated] = useState(false);
   const redirectedRef = useRef(false);
 
   const callbackUrl = searchParams.get("callbackUrl") || "/doctor";
 
   useEffect(() => {
     if (redirectedRef.current) return;
-    if (status === "loading") return;
 
     async function handleDoctorAuth() {
       if (redirectedRef.current) return;
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       // If unauthenticated, redirect immediately to the unified login page
-      if (status === "unauthenticated") {
+      if (!user) {
         redirectedRef.current = true;
+        setIsUnauthenticated(true);
         router.replace(`/auth?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         return;
       }
 
       // If authenticated, register as doctor role and redirect to doctor vault
-      if (status === "authenticated" && session?.user) {
-        redirectedRef.current = true;
-        setAuthorizing(true);
+      redirectedRef.current = true;
+      setAuthorizing(true);
         try {
           const registerRes = await fetch("/api/doctor/register", {
             method: "POST",
@@ -41,7 +43,9 @@ function DoctorAuthBridgeContent() {
             console.warn("Doctor auto-registration returned status:", registerRes.status);
           }
 
-          if ((session.user as any)?.isNewUser) {
+          const { data: profile } = await supabase.from('profiles').select('data').eq('id', user.id).single();
+
+          if (profile?.data?.isNewUser) {
             router.replace("/doctor/profile");
           } else {
             router.replace(callbackUrl || "/doctor");
@@ -50,11 +54,10 @@ function DoctorAuthBridgeContent() {
           console.error("Doctor authorization bridge error:", error);
           router.replace("/doctor");
         }
-      }
     }
 
     handleDoctorAuth();
-  }, [status, session, router, callbackUrl]);
+  }, [router, callbackUrl, supabase]);
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
@@ -64,12 +67,12 @@ function DoctorAuthBridgeContent() {
         </div>
         <div>
           <h2 className="text-lg font-bold text-foreground">
-            {status === "unauthenticated"
+            {isUnauthenticated
               ? "Redirecting to Secure Login..."
               : "Authorizing Clinical Vault..."}
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            {status === "unauthenticated"
+            {isUnauthenticated
               ? "Forwarding to the unified MediLocker authentication portal..."
               : "Verifying provider credentials and syncing clinical records..."}
           </p>

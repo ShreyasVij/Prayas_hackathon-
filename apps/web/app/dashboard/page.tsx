@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 
@@ -258,7 +258,20 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 function DashboardPageClient() {
-  const { data: session, status } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSessionUser(user);
+        setStatus("authenticated");
+      } else {
+        setStatus("unauthenticated");
+      }
+    });
+  }, []);
   const router = useRouter();
   const { groupedVitals, loading: vitalsLoading } = useVitals();
   const reduce = useReducedMotion();
@@ -275,12 +288,12 @@ function DashboardPageClient() {
 
   const displayName =
     (isDryRun ? "Alex Johnson" : null) ||
-    session?.user?.name ||
-    session?.user?.email?.split("@")[0] ||
+    sessionUser?.user_metadata?.name ||
+    sessionUser?.email?.split("@")[0] ||
     null;
 
   const isReturningUser =
-    status === "authenticated" && !(session?.user as any)?.isNewUser;
+    status === "authenticated" && !sessionUser?.user_metadata?.isNewUser;
 
   const greeting = isReturningUser
     ? displayName

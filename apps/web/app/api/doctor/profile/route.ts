@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { DoctorDocument, DoctorProfile } from "@db/doctors";
 import type { UserDocument } from "@db/users";
@@ -25,20 +26,21 @@ function normalizeGender(g: string | undefined | null): DoctorProfile["gender"] 
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       console.log("[DOCTOR_PROFILE] Unauthorized - no session or email");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log(`[DOCTOR_PROFILE] Fetching profile for: ${session.user.email}`);
+    console.log(`[DOCTOR_PROFILE] Fetching profile for: ${authUser.email}`);
 
     // Check if user has doctor role
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
-    if (!user) {
-      console.log(`[DOCTOR_PROFILE] User not found: ${session.user.email}`);
+    if (!authUser) {
+      console.log(`[DOCTOR_PROFILE] User not found: ${authUser.email}`);
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     
@@ -50,12 +52,12 @@ export async function GET() {
     const doctors = await getCollection<DoctorDocument>("doctors");
     const doctor = await doctors.findOne({ 
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });
 
-    console.log(`[DOCTOR_PROFILE] Doctor record ${doctor ? "found" : "not found"} for: ${session.user.email}`);
+    console.log(`[DOCTOR_PROFILE] Doctor record ${doctor ? "found" : "not found"} for: ${authUser.email}`);
 
     // If doctor exists but doesn't have a code, generate one
     if (doctor && !doctor.doctorCode) {
@@ -107,14 +109,15 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has doctor role
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
     if (!user?.roles?.includes("doctor")) {
       return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
@@ -138,7 +141,7 @@ export async function POST(req: Request) {
     const doctors = await getCollection<DoctorDocument>("doctors");
     const existing = await doctors.findOne({ 
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });
@@ -169,7 +172,7 @@ export async function POST(req: Request) {
         {
           $set: {
             profile,
-            name: session.user.name || existing.name,
+            name: authUser.name || existing.name,
             status: "active",
             updatedAt: new Date(),
           },
@@ -197,8 +200,8 @@ export async function POST(req: Request) {
         _id: new ObjectId(),
         doctorCode: normalizedCode, // CRITICAL: Store normalized code (no hyphens)
         userId: user._id,
-        email: session.user.email,
-        name: session.user.name || "",
+        email: authUser.email,
+        name: authUser.name || "",
         profile,
         role: "Doctor",
         status: "active",

@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { UserDocument } from "@db/users";
 
@@ -10,15 +11,16 @@ import type { UserDocument } from "@db/users";
  */
 export async function POST() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
