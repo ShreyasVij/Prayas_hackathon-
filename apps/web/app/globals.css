@@ -96,10 +96,15 @@
     @apply border-border;
   }
 
+  html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 

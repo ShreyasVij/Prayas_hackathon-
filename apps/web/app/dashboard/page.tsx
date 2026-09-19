@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 
 // Layout & data hooks
@@ -244,10 +245,17 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
 
 function DashboardPageClient() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const { groupedVitals, loading: vitalsLoading } = useVitals();
   const reduce = useReducedMotion();
 
   const isDryRun = process.env.NEXT_PUBLIC_DRY_RUN === 'true';
+
+  useEffect(() => {
+    if (status === "unauthenticated" && !isDryRun) {
+      router.push("/auth?callbackUrl=/dashboard");
+    }
+  }, [status, isDryRun, router]);
 
   const displayName =
     (isDryRun ? "Alex Johnson" : null) ||
