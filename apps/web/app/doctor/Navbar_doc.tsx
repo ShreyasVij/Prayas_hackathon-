@@ -9,7 +9,8 @@ import {
   Stethoscope, 
   Menu, 
   X, 
-  ShieldCheck 
+  ShieldCheck,
+  KeyRound
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
@@ -32,9 +33,9 @@ interface AppNavbarProps {
 }
 
 const doctorNavItems = [
-  { label: "Appointments & Schedule", href: "/doctor", icon: Calendar },
+  { label: "Workspace & Diagnostics", href: "/doctor", icon: LayoutDashboard },
+  { label: "Connect Patient", href: "/doctor/connect-patient", icon: KeyRound },
   { label: "Provider Profile", href: "/doctor/profile", icon: Stethoscope },
-  { label: "Patient Vault", href: "/dashboard", icon: LayoutDashboard },
 ];
 
 export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor" }: AppNavbarProps) {
@@ -187,11 +188,6 @@ export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor
                 <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer text-xs font-medium text-zinc-700 hover:text-teal-700 hover:bg-teal-50">
                   <Link href="/doctor/profile" className="flex items-center w-full">
                     <User className="mr-2.5 h-3.5 w-3.5 text-teal-600" /> Profile Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl py-2 cursor-pointer text-xs font-medium text-zinc-700 hover:text-teal-700 hover:bg-teal-50">
-                  <Link href="/dashboard" className="flex items-center w-full">
-                    <LayoutDashboard className="mr-2.5 h-3.5 w-3.5 text-teal-600" /> Patient Vault View
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
