@@ -1,345 +1,219 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  Activity,
   ArrowLeft,
   CheckCircle2,
-  AlertTriangle,
   FileImage,
-  ChevronRight,
-  ClipboardList,
-  Clock,
-  Activity,
-  RefreshCw,
-  Printer,
-  Stethoscope,
-  BarChart2,
   Info,
+  Printer,
+  ShieldAlert,
+  Stethoscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Re-use the DiagnosticResult interface shape
-interface AbnormalityItem {
-  label: string;
-  probability: number;
-  severity: "low" | "medium" | "high";
-  location?: string;
-}
-
-interface DiagnosticResult {
-  scanId: string;
-  modality: string;
-  status: "completed" | "flagged" | "inconclusive";
-  primaryFinding: string;
-  confidenceScore: number;
-  riskLevel: "Normal / Low" | "Moderate" | "Critical / Immediate Attention";
-  abnormalities: AbnormalityItem[];
-  clinicalRecommendations: string[];
+type StoredResult = {
+  diseaseId: string;
+  response: unknown;
   analyzedAt: string;
+  fileName: string;
+};
+
+type Prediction = { label: string; score: number };
+
+function formatLabel(value: string) {
+  return value.replace(/[_-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function getRiskColors(riskLevel: string) {
-  if (riskLevel.includes("Critical")) {
-    return {
-      badge: "bg-rose-50 text-rose-700 border-rose-200",
-      bar: "bg-rose-500",
-    };
+function findValue(value: unknown, names: string[]): unknown {
+  if (!value || typeof value !== "object") return undefined;
+  const object = value as Record<string, unknown>;
+  const key = Object.keys(object).find((candidate) =>
+    names.includes(candidate.toLowerCase()),
+  );
+  if (key) return object[key];
+  for (const nested of Object.values(object)) {
+    const match = findValue(nested, names);
+    if (match !== undefined) return match;
   }
-  if (riskLevel.includes("Moderate")) {
-    return {
-      badge: "bg-amber-50 text-amber-700 border-amber-200",
-      bar: "bg-amber-500",
-    };
-  }
-  return {
-    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    bar: "bg-emerald-500",
-  };
+  return undefined;
 }
 
-function getSeverityBadge(severity: "low" | "medium" | "high") {
-  switch (severity) {
-    case "high":
-      return "bg-rose-50 text-rose-700 border-rose-200";
-    case "medium":
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    default:
-      return "bg-slate-100 text-zinc-600 border-slate-200";
-  }
+function toPercentage(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(100, value <= 1 ? value * 100 : value));
+}
+
+function scoreText(score: number) {
+  return `${score.toFixed(2)}%`;
+}
+
+function extractPredictions(value: unknown): Prediction[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const object = item as Record<string, unknown>;
+      const label = object.label ?? object.name ?? object.class ?? object.disease ?? object.prediction;
+      const rawScore = object.score ?? object.confidence ?? object.probability ?? object.value;
+      const score = toPercentage(rawScore);
+      return typeof label === "string" && score !== null ? { label, score } : null;
+    })
+    .filter((item): item is Prediction => item !== null)
+    .sort((a, b) => b.score - a.score);
 }
 
 export default function DiagnosticResultPage() {
-  const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const [result, setResult] = useState<StoredResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem("diagnosticResult");
-      const storedPreview = sessionStorage.getItem("diagnosticPreviewUrl");
-      if (stored) {
-        setResult(JSON.parse(stored));
-      } else {
+      if (!stored) {
         setNotFound(true);
+        return;
       }
-      if (storedPreview) {
-        setPreviewUrl(storedPreview);
-      }
+      setResult(JSON.parse(stored) as StoredResult);
+      setPreviewUrl(sessionStorage.getItem("diagnosticPreviewUrl"));
     } catch {
       setNotFound(true);
     }
   }, []);
 
+  const view = useMemo(() => {
+    if (!result) return null;
+    const response = result.response;
+    const prediction = findValue(response, ["prediction", "predicted_disease", "predicted_label", "label", "class"]);
+    const confidence = toPercentage(findValue(response, ["confidence", "confidence_score", "probability", "score"]));
+    const modality = findValue(response, ["modality", "image_type", "imaging_type", "scan_type"]);
+    const allPredictions = extractPredictions(findValue(response, ["all_predictions", "predictions", "class_probabilities"]));
+    return {
+      prediction: typeof prediction === "string" ? prediction : null,
+      confidence,
+      modality: typeof modality === "string" ? modality : null,
+      allPredictions,
+    };
+  }, [result]);
+
   if (notFound) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 text-zinc-500 py-20">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 py-20 text-zinc-500">
         <FileImage className="h-10 w-10 text-zinc-300" />
-        <div className="text-center space-y-1">
-          <p className="text-sm font-bold text-zinc-700">No diagnostic result found</p>
-          <p className="text-xs text-zinc-400">Upload and analyze a medical image first.</p>
-        </div>
-        <Link
-          href="/doctor"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold transition-all shadow-xs"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Workspace
+        <p className="text-sm font-bold text-zinc-700">No diagnostic result found</p>
+        <Link href="/doctor" className="rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white">
+          <ArrowLeft className="mr-2 inline h-3.5 w-3.5" /> Back to Workspace
         </Link>
       </div>
     );
   }
 
-  if (!result) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Activity className="h-7 w-7 text-teal-600 animate-spin" />
-      </div>
-    );
-  }
+  if (!result || !view) return <div className="min-h-[400px]" />;
 
-  const riskColors = getRiskColors(result.riskLevel);
+  const primaryLabel = view.prediction ? formatLabel(view.prediction) : "Prediction unavailable";
+  const isPositive = view.prediction?.toLowerCase() !== "normal" && view.prediction?.toLowerCase() !== "negative";
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto py-2">
-
-      {/* ─── Breadcrumb & Actions ──────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
-        <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
-          <Link
-            href="/doctor"
-            className="hover:text-teal-700 transition-colors font-semibold"
-          >
-            Doctor Workspace
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
-          <span className="text-zinc-900 font-bold">Diagnostic Report</span>
+    <div className="mx-auto max-w-6xl space-y-7 py-2">
+      <div className="flex flex-col justify-between gap-4 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2 text-xs text-zinc-500">
+          <Link href="/doctor" className="font-semibold hover:text-teal-700">Doctor Workspace</Link>
+          <span>/</span><span className="font-bold text-zinc-900">AI Prediction Result</span>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-zinc-700 text-xs font-semibold transition-all shadow-xs"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            Print Report
+        <div className="flex gap-2">
+          <button type="button" onClick={() => window.print()} className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700">
+            <Printer className="mr-1.5 inline h-3.5 w-3.5" /> Print
           </button>
-          <Link
-            href="/doctor"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-zinc-700 text-xs font-semibold transition-all shadow-xs active:scale-95"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Workspace
+          <Link href="/doctor" className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700">
+            <ArrowLeft className="mr-1.5 inline h-3.5 w-3.5" /> New Analysis
           </Link>
         </div>
       </div>
 
-      {/* ─── Report Header ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200/90 shadow-2xs">
-            <Stethoscope className="h-3.5 w-3.5" />
-            Diagnostic Report
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-            {result.modality} Analysis
-          </h1>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-            <span className="flex items-center gap-1">
-              <ClipboardList className="h-3.5 w-3.5 text-zinc-400" />
-              Report ID: <span className="font-mono font-bold text-zinc-700 ml-1">{result.scanId}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5 text-zinc-400" />
-              Analyzed at <span className="font-medium text-zinc-700 ml-1">{result.analyzedAt}</span>
+      <header className="space-y-2">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+          <Stethoscope className="h-3.5 w-3.5" /> AI-assisted clinical analysis
+        </div>
+        <h1 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">{formatLabel(result.diseaseId)} Detection</h1>
+        <p className="text-xs text-zinc-500">Image: {result.fileName} · {new Date(result.analyzedAt).toLocaleString()}</p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="space-y-5 lg:col-span-5">
+          <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-md">
+            {previewUrl ? <img src={previewUrl} alt="Analyzed medical image" className="h-full w-full object-contain" /> : <FileImage className="h-12 w-12 text-zinc-600" />}
+            <span className="absolute bottom-3 left-3 rounded-lg bg-zinc-900/80 px-3 py-1.5 text-[11px] font-semibold text-zinc-200">
+              {view.modality ? formatLabel(view.modality) : "Medical image"}
             </span>
           </div>
-        </div>
 
-        {/* Status & Risk badges */}
-        <div className="flex flex-wrap items-center gap-2 self-start">
-          <span className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border shadow-2xs",
-            riskColors.badge
-          )}>
-            {result.riskLevel.includes("Normal") ? (
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5" />
-            )}
-            {result.riskLevel}
-          </span>
-          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200 shadow-2xs tabular-nums">
-            <BarChart2 className="h-3.5 w-3.5" />
-            {result.confidenceScore}% confidence
-          </span>
-        </div>
-      </div>
-
-      {/* ─── Main Content Grid ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* Left: Image Preview */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-800 aspect-square flex items-center justify-center shadow-md relative">
-            {previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewUrl}
-                alt={`${result.modality} scan`}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-2 text-zinc-600">
-                <FileImage className="h-10 w-10" />
-                <span className="text-xs font-medium">Image preview unavailable</span>
-              </div>
-            )}
-            {/* Modality label */}
-            <div className="absolute bottom-3 left-3 right-3 px-3 py-1.5 rounded-lg bg-zinc-900/80 backdrop-blur-sm border border-zinc-700/60 flex items-center justify-between text-[11px] text-zinc-300 font-medium">
-              <span>{result.modality}</span>
-              <span className="text-zinc-500 font-mono">{result.scanId}</span>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Model confidence</span>
+              <Activity className="h-4 w-4 text-teal-600" />
             </div>
-          </div>
-
-          {/* Confidence Indicator */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">Diagnostic Confidence</span>
-              <span className="text-sm font-black tabular-nums text-teal-700">{result.confidenceScore}%</span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-              <div
-                className={cn("h-2.5 rounded-full transition-all", riskColors.bar)}
-                style={{ width: `${result.confidenceScore}%` }}
-              />
-            </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Confidence reflects the model&apos;s certainty in the primary finding. Clinical correlation is always recommended.
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Findings & Recommendations */}
-        <div className="lg:col-span-7 space-y-5">
-
-          {/* Primary Finding */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <ClipboardList className="h-4 w-4 text-teal-600 shrink-0" />
-              <h2 className="text-sm font-bold text-zinc-900">Primary Finding</h2>
-            </div>
-            <p className="text-sm text-zinc-700 leading-relaxed font-medium">
-              {result.primaryFinding}
-            </p>
-          </div>
-
-          {/* Detected Features / Abnormalities */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <BarChart2 className="h-4 w-4 text-teal-600 shrink-0" />
-              <h2 className="text-sm font-bold text-zinc-900">Detected Features</h2>
-            </div>
-            <div className="space-y-3">
-              {result.abnormalities.map((item, idx) => (
-                <div key={idx} className="flex flex-col gap-1.5 p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-xl">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-zinc-800">{item.label}</span>
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
-                        getSeverityBadge(item.severity)
-                      )}>
-                        {item.severity}
-                      </span>
-                    </div>
-                    <span className="text-sm font-black tabular-nums text-teal-700 shrink-0">{item.probability}%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-teal-500 transition-all"
-                      style={{ width: `${item.probability}%` }}
-                    />
-                  </div>
-                  {item.location && (
-                    <span className="text-[11px] text-zinc-400">{item.location}</span>
-                  )}
+            {view.confidence !== null ? (
+              <>
+                <div className="flex items-end gap-2">
+                  <span className="text-4xl font-black tabular-nums text-teal-700">{scoreText(view.confidence)}</span>
+                  <span className="pb-1 text-xs text-zinc-400">confidence score</span>
                 </div>
-              ))}
+                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${view.confidence}%` }} />
+                </div>
+              </>
+            ) : <p className="text-sm text-zinc-500">Confidence was not provided by the prediction service.</p>}
+          </div>
+        </div>
+
+        <div className="space-y-5 lg:col-span-7">
+          <div className={cn("rounded-2xl border p-6 shadow-sm", isPositive ? "border-amber-200 bg-amber-50/70" : "border-emerald-200 bg-emerald-50/70")}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className={cn("text-xs font-bold uppercase tracking-wider", isPositive ? "text-amber-800" : "text-emerald-800")}>Primary prediction</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{primaryLabel}</h2>
+              </div>
+              {isPositive ? <ShieldAlert className="h-9 w-9 text-amber-600" /> : <CheckCircle2 className="h-9 w-9 text-emerald-600" />}
             </div>
+            <p className="mt-4 text-xs leading-relaxed text-zinc-600">
+              This is a model-generated result for clinical review. It should be interpreted alongside patient history and professional assessment.
+            </p>
           </div>
 
-          {/* Clinical Recommendations */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <ChevronRight className="h-4 w-4 text-teal-600 shrink-0" />
-              <h2 className="text-sm font-bold text-zinc-900">Recommended Next Actions</h2>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-zinc-900">All predictions</h2>
+                <p className="mt-1 text-xs text-zinc-500">Relative model scores across detected classes</p>
+              </div>
+              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-zinc-600">{view.allPredictions.length} classes</span>
             </div>
-            <ul className="space-y-2.5">
-              {result.clinicalRecommendations.map((rec, idx) => (
-                <li key={idx} className="flex items-start gap-3 text-xs text-zinc-700 leading-relaxed">
-                  <div className="h-5 w-5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
+            {view.allPredictions.length > 0 ? (
+              <div className="space-y-4">
+                {view.allPredictions.map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                      <span className="font-semibold text-zinc-700">{formatLabel(item.label)}</span>
+                      <span className="font-bold tabular-nums text-teal-700">{scoreText(item.score)}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div className={cn("h-full rounded-full", item.label.toLowerCase() === view.prediction?.toLowerCase() ? "bg-teal-600" : "bg-teal-300")} style={{ width: `${item.score}%` }} />
+                    </div>
                   </div>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </div>
+            ) : <p className="rounded-xl bg-slate-50 p-4 text-xs text-zinc-500">Detailed class scores were not provided by the prediction service.</p>}
           </div>
-
         </div>
       </div>
 
-      {/* ─── Disclaimer ─────────────────────────────────────────────── */}
-      <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row items-start gap-3 text-xs text-zinc-500">
-        <Info className="h-4 w-4 text-zinc-400 shrink-0 mt-0.5" />
-        <span className="leading-relaxed">
-          This report is generated by an automated diagnostic tool and is intended to support — not replace — clinical judgment. All findings should be correlated with patient history, physical examination, and additional investigations as appropriate.
-        </span>
+      <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+        <span>AI-generated predictions are intended to assist healthcare professionals and do not replace professional medical diagnosis, examination, or treatment decisions.</span>
       </div>
-
-      {/* ─── Footer Actions ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-200/80">
-        <Link
-          href="/doctor"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-zinc-700 text-xs font-semibold transition-all shadow-xs"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Workspace
-        </Link>
-        <Link
-          href="/doctor"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-xs"
-          onClick={() => {
-            sessionStorage.removeItem("diagnosticResult");
-            sessionStorage.removeItem("diagnosticPreviewUrl");
-          }}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          New Analysis
-        </Link>
-      </div>
-
     </div>
   );
 }
