@@ -15,35 +15,19 @@ import { cn } from "@/lib/utils";
 
 // ─── Interfaces ─────────────────────────────────────────────────────────────
 
-export interface DiagnosticResult {
-  scanId: string;
-  modality: string;
-  status: "completed" | "flagged" | "inconclusive";
-  primaryFinding: string;
-  confidenceScore: number; // e.g. 94.6%
-  riskLevel: "Normal / Low" | "Moderate" | "Critical / Immediate Attention";
-  abnormalities: {
-    label: string;
-    probability: number;
-    severity: "low" | "medium" | "high";
-    location?: string;
-  }[];
-  clinicalRecommendations: string[];
-  analyzedAt: string;
-}
+export const SUPPORTED_DISEASES = [
+  "pneumonia", "covid19", "tuberculosis", "lung_cancer", "melanoma",
+  "diabetic_retinopathy", "glaucoma", "brain_tumor", "alzheimers",
+  "breast_cancer", "leukemia", "arrhythmia",
+] as const;
 
-export type ScanModality = 
-  | "chest-xray" 
-  | "brain-mri" 
-  | "ct-abdomen" 
-  | "skin-dermoscopy" 
-  | "general-radiology";
+export type SupportedDisease = (typeof SUPPORTED_DISEASES)[number];
 
 export function MedicalImageUpload() {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [modality, setModality] = useState<ScanModality>("chest-xray");
+  const [diseaseId, setDiseaseId] = useState<SupportedDisease>("pneumonia");
   const [isDragging, setIsDragging] = useState(false);
   
   // Inference execution states
@@ -61,7 +45,11 @@ export function MedicalImageUpload() {
   const handleFile = (file: File) => {
     setErrorMessage(null);
 
-    // Validate size
+    if (!file.type.startsWith("image/") && ![".dcm", ".dicom"].some((extension) => file.name.toLowerCase().endsWith(extension))) {
+      setErrorMessage("Please select a valid medical image (JPEG, PNG, WebP, or DICOM).");
+      return;
+    }
+
     if (file.size > maxSizeBytes) {
       setErrorMessage("File exceeds the 50MB clinical imaging threshold.");
       return;
@@ -113,104 +101,40 @@ export function MedicalImageUpload() {
     }
   };
 
-  // =========================================================================
-  // PLUG IN YOUR ML MODEL API ENDPOINT HERE
-  // =========================================================================
-  // This asynchronous function simulates sending the image payload to your
-  // ML diagnostic service (e.g. FastAPI /diagnose/{disease_id} or Next.js /api/ocr/analyze).
-  // Replace the setTimeout steps below with your real fetch / axios request:
-  //
-  // Example real implementation:
-  //
-  // const formData = new FormData();
-  // formData.append("image", selectedFile);
-  // formData.append("modality", modality);
-  // const response = await fetch("/api/ai/diagnostics/infer", {
-  //   method: "POST",
-  //   body: formData,
-  // });
-  // const data = await response.json();
-  // =========================================================================
   const handleTriggerMLModel = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !diseaseId) return;
 
     setIsAnalyzing(true);
     setErrorMessage(null);
     setProgressPercent(15);
-    setAnalysisStep("Preparing image for analysis...");
+    setAnalysisStep("Uploading image securely...");
 
     try {
-      // Step 1: Simulated preprocessing
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setProgressPercent(45);
-      setAnalysisStep("Normalizing image channels and extracting features...");
+      const formData = new FormData();
+      formData.append("disease_id", diseaseId);
+      formData.append("file", selectedFile);
+      const response = await fetch("/api/doctor/predict", { method: "POST", body: formData });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.detail || payload?.error || `Prediction failed (${response.status}).`);
+      }
 
-      // Step 2: Simulated model inference
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setProgressPercent(75);
-      setAnalysisStep(`Running diagnostic model (${modality})...`);
-
-      // Step 3: Simulated clinical report generation
-      await new Promise((resolve) => setTimeout(resolve, 900));
       setProgressPercent(100);
-      setAnalysisStep("Generating structured diagnostic report...");
-
-      await new Promise((resolve) => setTimeout(resolve, 400));
-
-      // Mock ML model diagnostic output based on modality
-      const mockResult: DiagnosticResult = {
-        scanId: `SCN-${Math.floor(100000 + Math.random() * 900000)}`,
-        modality: modality.toUpperCase().replace("-", " "),
-        status: "completed",
-        primaryFinding: 
-          modality === "chest-xray" 
-            ? "Mild right-basilar consolidative density with elevated peri-bronchial markings."
-            : modality === "brain-mri"
-            ? "No evidence of acute intracranial hemorrhage or midline shift; benign focal white-matter hyperintensity."
-            : modality === "ct-abdomen"
-            ? "Normal solid visceral perfusion; no acute appendiceal enlargement or free fluid."
-            : "Atypical melanocytic pattern with low border irregularity index; recommend routine monitoring.",
-        confidenceScore: 94.6,
-        riskLevel: modality === "chest-xray" ? "Moderate" : "Normal / Low",
-        abnormalities: [
-          {
-            label: modality === "chest-xray" ? "Lower Lobe Infiltration" : "Signal Variance",
-            probability: 88.4,
-            severity: modality === "chest-xray" ? "medium" : "low",
-            location: modality === "chest-xray" ? "Right lower lobe" : "Frontal lobe"
-          },
-          {
-            label: "Pleural Effusion",
-            probability: 6.2,
-            severity: "low",
-            location: "Bilateral bases"
-          },
-          {
-            label: "Cardiomegaly",
-            probability: 11.5,
-            severity: "low",
-            location: "Cardiothoracic ratio 0.48"
-          }
-        ],
-        clinicalRecommendations: [
-          "Correlate findings with patient auscultation and SpO2 trends.",
-          "Consider repeat radiograph in 10-14 days post antimicrobial therapy if symptoms persist.",
-          "Archive diagnostic DICOM slice to patient's verified MediLocker health record."
-        ],
-        analyzedAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-      };
-
-      // Store result and preview URL in sessionStorage for the results page
-      sessionStorage.setItem("diagnosticResult", JSON.stringify(mockResult));
+      setAnalysisStep("Prediction complete.");
+      sessionStorage.setItem("diagnosticResult", JSON.stringify({
+        diseaseId,
+        response: payload,
+        analyzedAt: new Date().toISOString(),
+        fileName: selectedFile.name,
+      }));
       if (previewUrl) {
         sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
       }
 
-      // Navigate to results page
       router.push("/doctor/result");
-    } catch (err: any) {
+    } catch (err) {
       console.error("ML Inference error:", err);
-      setErrorMessage(err.message || "Failed to complete diagnostic analysis. Check server connectivity.");
+      setErrorMessage(err instanceof Error ? err.message : "Failed to complete diagnostic analysis. Check server connectivity.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -238,24 +162,22 @@ export function MedicalImageUpload() {
           </div>
         </div>
 
-        {/* Modality Selector */}
+        {/* Disease Selector */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <label htmlFor="modality" className="text-xs font-semibold text-zinc-500 flex items-center gap-1.5">
+          <label htmlFor="disease-id" className="text-xs font-semibold text-zinc-500 flex items-center gap-1.5">
             <Sliders className="h-3.5 w-3.5 text-zinc-400" />
-            Modality:
+            Disease:
           </label>
           <select
-            id="modality"
-            value={modality}
-            onChange={(e) => setModality(e.target.value as ScanModality)}
+            id="disease-id"
+            value={diseaseId}
+            onChange={(e) => setDiseaseId(e.target.value as SupportedDisease)}
             disabled={isAnalyzing}
             className="text-xs font-semibold bg-slate-50/80 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-1.5 text-zinc-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:outline-none transition-all shadow-2xs"
           >
-            <option value="chest-xray">Chest X-Ray / Radiograph</option>
-            <option value="brain-mri">Brain MRI (T1/T2 Axial)</option>
-            <option value="ct-abdomen">Abdominal CT Scan</option>
-            <option value="skin-dermoscopy">Dermatology / Skin Lesion</option>
-            <option value="general-radiology">General Radiograph</option>
+            {SUPPORTED_DISEASES.map((disease) => (
+              <option key={disease} value={disease}>{disease}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -368,8 +290,8 @@ export function MedicalImageUpload() {
 
                 <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 space-y-2.5 text-xs shadow-2xs">
                   <div className="flex items-center justify-between text-zinc-600">
-                    <span className="text-zinc-500">Target Modality:</span>
-                    <span className="font-bold text-zinc-900 uppercase tracking-tight">{modality}</span>
+                    <span className="text-zinc-500">Target Disease:</span>
+                    <span className="font-bold text-zinc-900 uppercase tracking-tight">{diseaseId}</span>
                   </div>
                   <div className="flex items-center justify-between text-zinc-600">
                     <span className="text-zinc-500">File Type:</span>
