@@ -51,7 +51,7 @@ export default function EmergencyNfcPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/signin');
+      router.push('/auth?callbackUrl=/emergency/nfc');
     }
   }, [status, router]);
 
