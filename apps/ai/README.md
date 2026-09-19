@@ -25,12 +25,16 @@ Clean Python AI service for MediLocker. This service recreates the existing docu
 From `apps/ai`:
 
 ```powershell
-python -m pip install -e .
-python -m pytest -q
-python scripts\smoke_test.py
-python scripts\validate_models.py
-uvicorn main:app --reload --port 8000
+uv sync
+uv run pytest -q
+uv run python scripts/validate_models.py
+uv run uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+The service uses a `src` package layout. Run Uvicorn through `uv run` (or
+install the project with `python -m pip install -e .` before using a standalone
+`uvicorn` command); otherwise `medilocker_ai` will not be importable from
+`main.py`.
 
 The default runtime is `mock`, which makes the service testable without external model credentials. Set `AI_RUNTIME_PROVIDER=huggingface` only after configuring a model and token.
 

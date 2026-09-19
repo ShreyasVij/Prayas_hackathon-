@@ -169,3 +169,5 @@ Patient: Kagstro Woods
 Date of Birth: 06/15/1982 (41 years)
 Date: 05/03/2024
 Alex Tho
+[2026-09-19T20:34:46.300Z] [POST] initialMeta: {"patient_name":null,"dob":null,"doctor_name":null,"diagnosis":null,"summary":null,"report_date":null,"medications":[],"vitals":[],"raw_text":""}
+[2026-09-19T20:34:46.300Z] [POST] initialMeta.raw_text: 

@@ -86,8 +86,25 @@ export default function DocumentsPage() {
       if (!res.ok) {
         throw new Error(data?.error || "Upload failed");
       }
+      const aiHandler = data?.aiHandler === "external" ? "external" : "internal";
       // Accept both direct object or {data: {...}} shapes
       const extracted: any = (data as any)?.data ?? (data as any) ?? null;
+      if (aiHandler === "external") {
+        const externalPreviewUrl = previewUrl;
+        const externalFileName = files.map((file) => file.name).join(", ");
+        const saved = await onConfirm(extracted || {});
+        if (!saved) return;
+        sessionStorage.setItem("externalDocumentResult", JSON.stringify({
+          fileName: externalFileName,
+          extracted,
+          analyzedAt: new Date().toISOString(),
+        }));
+        if (externalPreviewUrl) {
+          sessionStorage.setItem("externalDocumentPreviewUrl", externalPreviewUrl);
+        }
+        router.push("/documents/result");
+        return;
+      }
       // Debug: log extracted AI payload to verify units/summary presence
       try { console.debug('[AI Extract] payload', extracted); } catch {}
       setAiData(extracted);
@@ -142,10 +159,10 @@ export default function DocumentsPage() {
     return `${files.length} files • ${totalKb} KB total`;
   }, [files]);
 
-  const onConfirm = async (payload: ExtractedDocument) => {
+  const onConfirm = async (payload: ExtractedDocument): Promise<boolean> => {
     if (files.length === 0) {
       setError("No file selected to save");
-      return;
+      return false;
     }
     try {
       setStatus("processing");
@@ -173,7 +190,7 @@ export default function DocumentsPage() {
         report_date: payload.report_date,
         medications: payload.medications,
         vitals: payload.vitals,
-        raw_text: aiData?.raw_text || '',
+        raw_text: payload.raw_text || aiData?.raw_text || '',
       };
       fd.append('meta', JSON.stringify(meta));
 
@@ -194,9 +211,11 @@ export default function DocumentsPage() {
       // Refresh documents list and switch to view mode
       await refreshDocuments();
       setViewMode('view');
+      return true;
     } catch (err: any) {
       setError(err?.message || "Save failed");
       setStatus("error");
+      return false;
     }
   };
 
