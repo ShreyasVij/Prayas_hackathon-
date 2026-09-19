@@ -43,9 +43,9 @@ export default function BookAppointmentPage() {
   const [booking, setBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   
-  // Hospital map state
+  // Hospital map state — show map by default for seamless doctor booking
   const [selectedDoctor, setSelectedDoctor] = useState<SelectedDoctor | null>(null);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
 
   const handleSearchDoctor = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,8 +322,8 @@ export default function BookAppointmentPage() {
                   .join(", ")}
               </p>
               <div className="flex gap-4 mt-2 text-sm">
-                {selectedDoctor.distance && (
-                  <span className="text-blue-600 font-medium">
+                {typeof selectedDoctor.distance === 'number' && !isNaN(selectedDoctor.distance) && (
+                  <span className="text-teal-700 font-semibold text-xs bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
                     📍 {selectedDoctor.distance.toFixed(2)} km away
                   </span>
                 )}

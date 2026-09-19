@@ -42,7 +42,7 @@ export default function Calendar({ selectedDate, onDateSelect }: CalendarProps) 
 
     // Empty cells for days before month starts
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-10" />);
+      days.push(<div key={`empty-${i}`} className="h-9" />);
     }
 
     // Days of the month
@@ -62,11 +62,14 @@ export default function Calendar({ selectedDate, onDateSelect }: CalendarProps) 
           key={day}
           onClick={() => onDateSelect(date)}
           className={`
-            h-10 flex items-center justify-center rounded-lg text-sm font-medium
-            transition-all duration-150 hover:bg-gray-100
-            ${isToday ? "ring-2 ring-blue-500 ring-offset-1" : ""}
-            ${isSelected ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-700"}
-            ${!isSelected && !isToday ? "hover:bg-gray-50" : ""}
+            h-9 flex items-center justify-center rounded-xl text-xs font-semibold
+            transition-all duration-150
+            ${isSelected 
+              ? "bg-teal-600 text-white shadow-xs font-bold" 
+              : isToday 
+                ? "ring-2 ring-teal-500/80 ring-offset-1 text-teal-800 font-bold hover:bg-teal-50" 
+                : "text-zinc-700 hover:bg-slate-100"
+            }
           `}
         >
           {day}
@@ -78,25 +81,25 @@ export default function Calendar({ selectedDate, onDateSelect }: CalendarProps) 
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-gray-800">
+        <h3 className="text-sm font-bold text-zinc-900">
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h3>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button
             onClick={previousMonth}
-            className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-1.5 hover:bg-teal-50 hover:text-teal-700 text-zinc-500 rounded-lg transition-colors"
             aria-label="Previous month"
           >
-            <ChevronLeft className="h-5 w-5 text-gray-600" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={nextMonth}
-            className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-1.5 hover:bg-teal-50 hover:text-teal-700 text-zinc-500 rounded-lg transition-colors"
             aria-label="Next month"
           >
-            <ChevronRight className="h-5 w-5 text-gray-600" />
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -105,7 +108,7 @@ export default function Calendar({ selectedDate, onDateSelect }: CalendarProps) 
         {dayNames.map((day) => (
           <div
             key={day}
-            className="h-8 flex items-center justify-center text-xs font-medium text-gray-500"
+            className="h-7 flex items-center justify-center text-[10px] font-bold text-zinc-400 uppercase tracking-wider"
           >
             {day}
           </div>
@@ -118,3 +121,4 @@ export default function Calendar({ selectedDate, onDateSelect }: CalendarProps) 
     </div>
   );
 }
+
