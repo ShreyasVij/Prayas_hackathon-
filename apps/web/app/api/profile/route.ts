@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import {
   saveProfileJsonToSupabase,
@@ -30,8 +31,9 @@ function normalizeGender(g: string | undefined | null): UserProfile["gender"] | 
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email || (DRY_RUN ? "alex.johnson@example.com" : null);
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const email = user?.email || (DRY_RUN ? "alex.johnson@example.com" : null);
 
     if (!email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -95,7 +97,7 @@ export async function GET() {
         googleSub: dbUser.googleSub,
       } : {
         email,
-        name: supabaseProfile?.name || session?.user?.name || "Patient",
+        name: supabaseProfile?.name || user?.user_metadata?.name || "Patient",
         roles: ["patient"],
         status: "active",
         createdAt: new Date().toISOString(),
@@ -110,8 +112,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email || (DRY_RUN ? "alex.johnson@example.com" : null);
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const email = user?.email || (DRY_RUN ? "alex.johnson@example.com" : null);
 
     if (!email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -156,9 +159,9 @@ export async function POST(req: Request) {
     // 1. Build JSON structure for Supabase
     const profileJson: ProfileJsonData = {
       email,
-      name: name || session?.user?.name || "Patient",
+      name: name || user?.user_metadata?.name || "Patient",
       basicDetails: {
-        name: name || session?.user?.name || "Patient",
+        name: name || user?.user_metadata?.name || "Patient",
         gender: effectiveGender,
         dob: dob ? String(dob).slice(0, 10) : null,
         age: age ? Number(age) : null,

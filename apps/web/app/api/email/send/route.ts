@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/server/authOptions';
+
+
 import { sendEmail, EmailTemplate } from '@/lib/server/email';
 
 // POST /api/email/send
@@ -8,8 +9,9 @@ import { sendEmail, EmailTemplate } from '@/lib/server/email';
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { ObjectId } from "mongodb";
 
 import { getUsersCollection } from "@/lib/models/User";
@@ -9,9 +10,10 @@ import { getFamilyInvitesCollection } from "@/lib/server/FamilyInvite";
 
 export async function POST(req: Request) {
   const { token } = await req.json();
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!session?.user?.email) {
+  if (!authUser?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,7 +21,7 @@ export async function POST(req: Request) {
   const families = await getFamiliesCollection();
   const invites = await getFamilyInvitesCollection();
 
-  const user = await users.findOne({ email: session.user.email });
+  const user = await users.findOne({ email: authUser.email });
   if (!user || user.familyId) {
     return NextResponse.json({ error: "Invalid user state" }, { status: 400 });
   }

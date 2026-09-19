@@ -1,3 +1,4 @@
+import { createClient } from "@/utils/supabase/server";
 /**
  * POST /api/emergency/nfc/create
  * Creates a new NFC emergency access token
@@ -5,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+
 import { ObjectId } from 'mongodb';
 import {
   createNfcToken,
@@ -41,9 +42,10 @@ function generateUUID(): string {
 export async function POST(req: NextRequest) {
   try {
     // Authentication
-    const session = await getServerSession();
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json(
         { error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
@@ -53,9 +55,9 @@ export async function POST(req: NextRequest) {
     // Get user from database
     const db = await getDbClient();
     const usersCollection = db.collection<UserDocument>('users');
-    const user = await usersCollection.findOne({ email: session.user.email });
+    const user = await usersCollection.findOne({ email: authUser.email });
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'User not found', code: 'USER_NOT_FOUND' },
         { status: 404 }

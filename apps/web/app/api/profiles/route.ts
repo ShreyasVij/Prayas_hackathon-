@@ -1,14 +1,16 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db"; 
 import type { UserDocument } from "@db/users"; 
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -16,9 +18,9 @@ export async function GET(req: Request) {
     }
 
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
@@ -63,9 +65,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
 
-    const session = await getServerSession(authOptions);
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -96,7 +99,7 @@ export async function POST(req: Request) {
 
 
     await users.updateOne(
-      { email: session.user.email },
+      { email: authUser.email },
       {
         $set: {
           profile: {

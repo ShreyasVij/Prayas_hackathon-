@@ -1,13 +1,15 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/server/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/server/authOptions';
+
+
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -15,7 +17,7 @@ export async function GET() {
     const profilesCol = await getCollection('profiles');
     const documentsCol = await getCollection('documents');
 
-    const user = await usersCol.findOne({ email: session.user.email });
+    const user = await usersCol.findOne({ email: authUser.email });
     const userId = (user as any)?.id || (user as any)?._id?.toString();
 
     const allProfiles = await profilesCol.find({ userId }).toArray();
@@ -24,7 +26,7 @@ export async function GET() {
 
     return NextResponse.json({
       session: {
-        email: session.user.email,
+        email: authUser.email,
       },
       user: {
         id: (user as any)?.id,

@@ -12,12 +12,12 @@ import {
   ShieldCheck,
   KeyRound
 } from "lucide-react";
-import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,16 +35,22 @@ interface AppNavbarProps {
 const doctorNavItems = [
   { label: "Workspace & Diagnostics", href: "/doctor", icon: LayoutDashboard },
   { label: "Connect Patient", href: "/doctor/connect-patient", icon: KeyRound },
+  { label: "Verify Diagnostics", href: "/doctor/verify", icon: ClipboardList },
   { label: "Provider Profile", href: "/doctor/profile", icon: Stethoscope },
 ];
 
-export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor" }: AppNavbarProps) {
+export function AppNavbar({ userName, userRole = "doctor" }: AppNavbarProps) {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const isAuthed = status === "authenticated";
-  const effectiveUserName = isAuthed ? (session?.user?.name || session?.user?.email || userName) : userName;
+  const supabase = createClient();
+  const isAuthed = !!userName;
+  const effectiveUserName = userName || "Healthcare Provider";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -181,7 +187,7 @@ export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor
                 <DropdownMenuLabel className="font-normal px-3 py-2">
                   <div className="flex flex-col space-y-0.5">
                     <p className="text-xs font-bold text-zinc-900 leading-none">{effectiveUserName}</p>
-                    <p className="text-[11px] text-zinc-500 truncate">{session?.user?.email || "Healthcare Provider"}</p>
+                    <p className="text-[11px] text-zinc-500 truncate">Healthcare Provider</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
@@ -195,7 +201,7 @@ export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor
                   className="text-rose-600 hover:bg-rose-50 rounded-xl py-2 cursor-pointer text-xs font-medium"
                   onSelect={(event) => {
                     event.preventDefault();
-                    signOut({ callbackUrl: "/auth" });
+                    handleSignOut();
                   }}
                 >
                   <LogOut className="mr-2.5 h-3.5 w-3.5 text-rose-500" /> Sign Out
@@ -248,7 +254,7 @@ export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    signOut({ callbackUrl: "/auth" });
+                    handleSignOut();
                   }}
                   className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
                 >

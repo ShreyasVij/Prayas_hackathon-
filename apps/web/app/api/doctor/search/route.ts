@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { DoctorDocument } from "@db/doctors";
 import { validateDoctorCode, normalizeDoctorCode } from "@db/utils";
@@ -22,8 +23,9 @@ import { validateDoctorCode, normalizeDoctorCode } from "@db/utils";
  */
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

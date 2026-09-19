@@ -1,29 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import EmergencyTokenGenerator from '@/components/EmergencyTokenGenerator';
 import { Shield } from 'lucide-react';
 
 export default function EmergencySettingsPage() {
-  const { data: session, status } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const router = useRouter();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSessionUser(user);
+        setStatus('authenticated');
+      } else {
+        setStatus('unauthenticated');
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth?callbackUrl=/emergency/settings');
       return;
     }
     
-    if (status === 'authenticated' && session?.user) {
+    if (status === 'authenticated' && sessionUser) {
       // Fetch user's primary profile
       fetchUserProfile();
     }
-  }, [status, session]);
+  }, [status, sessionUser]);
   
   const fetchUserProfile = async () => {
     try {

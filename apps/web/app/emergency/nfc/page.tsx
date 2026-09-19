@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import EmergencyNfcCard from '@/components/emergency/EmergencyNfcCard';
 import CreateNfcTokenModal from '@/components/emergency/CreateNfcTokenModal';
@@ -36,8 +36,21 @@ interface Profile {
 }
 
 export default function EmergencyNfcPage() {
-  const { data: session, status } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSessionUser(user);
+        setStatus('authenticated');
+      } else {
+        setStatus('unauthenticated');
+      }
+    });
+  }, []);
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -57,10 +70,10 @@ export default function EmergencyNfcPage() {
 
   // Fetch profiles
   useEffect(() => {
-    if (session?.user?.email) {
+    if (sessionUser?.email) {
       fetchProfiles();
     }
-  }, [session]);
+  }, [sessionUser]);
 
   // Fetch tokens when profile changes
   useEffect(() => {

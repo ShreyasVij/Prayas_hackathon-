@@ -1,5 +1,6 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
 import {
@@ -23,9 +24,10 @@ function getClientInfo(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Get authenticated session
-    const session = await getServerSession();
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -37,9 +39,9 @@ export async function POST(req: NextRequest) {
     // Find user
     const db = await getDbClient();
     const usersCollection = db.collection<UserDocument>('users');
-    const user = await usersCollection.findOne({ email: session.user.email });
+    const user = await usersCollection.findOne({ email: authUser.email });
     
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
