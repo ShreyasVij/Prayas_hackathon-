@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIdentity } from '@/lib/server/auth';
 import { getCollection } from '@/lib/server/db';
-import { callSummarize } from '@/service/aiClient';
+import { AIRequestError, callSummarize } from '@/service/aiClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,10 +26,14 @@ export async function POST(request: NextRequest) {
     let summary;
     try {
       summary = await callSummarize({ structuredData });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const aiError = error instanceof AIRequestError ? error : null;
       return NextResponse.json(
-        { error: error?.message || 'Summarization failed' },
-        { status: 502 },
+        {
+          error: aiError?.message || 'Summarization failed',
+          ...(aiError?.code ? { code: aiError.code } : {}),
+        },
+        { status: aiError?.status === 429 ? 429 : 502 },
       );
     }
 

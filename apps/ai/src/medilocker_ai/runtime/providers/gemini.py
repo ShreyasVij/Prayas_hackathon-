@@ -8,7 +8,13 @@ from typing import Any
 from .base import ModelProvider
 from ..types import GenerationResult
 from ...core.config import get_settings
-from ...core.safety import ProviderUnavailableError
+from ...core.safety import (
+    ProviderAuthError,
+    ProviderBadRequestError,
+    ProviderModelUnavailableError,
+    ProviderRateLimitedError,
+    ProviderUnavailableError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +95,47 @@ class GeminiProvider(ModelProvider):
                 raise
             except Exception as exc:
                 last_error = exc
+                status_code = self._status_code(exc)
+                if status_code == 429:
+                    logger.error(
+                        "Gemini generation rate limited provider=%s model=%s attempt=%d status=%d",
+                        self.name,
+                        model_name,
+                        attempt + 1,
+                        status_code,
+                    )
+                    raise ProviderRateLimitedError(
+                        "Gemini request quota exceeded"
+                    ) from exc
+                if status_code in (401, 403):
+                    raise ProviderAuthError("Gemini authentication or access was rejected") from exc
+                if status_code == 404:
+                    raise ProviderModelUnavailableError(
+                        f"Gemini model is unavailable: {model_name}"
+                    ) from exc
+                if status_code == 400:
+                    raise ProviderBadRequestError("Gemini rejected the generation request") from exc
                 logger.warning(
-                    "Gemini generation attempt failed provider=%s model=%s attempt=%d error_type=%s",
+                    "Gemini generation attempt failed provider=%s model=%s attempt=%d status=%s error_type=%s",
                     self.name,
                     model_name,
                     attempt + 1,
+                    status_code or "unknown",
                     type(exc).__name__,
                 )
-                if attempt < settings.runtime_retries:
+                if attempt < settings.runtime_retries and (status_code is None or status_code >= 500):
                     await asyncio.sleep(0.5 * (2 ** attempt))
 
         raise ProviderUnavailableError("Gemini generation failed") from last_error
+
+    @staticmethod
+    def _status_code(error: Exception) -> int | None:
+        for name in ("status_code", "http_status", "code"):
+            value = getattr(error, name, None)
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str) and value.isdigit():
+                return int(value)
+        response = getattr(error, "response", None)
+        value = getattr(response, "status_code", None)
+        return value if isinstance(value, int) else None

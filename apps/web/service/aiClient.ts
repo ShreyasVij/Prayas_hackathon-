@@ -32,6 +32,18 @@ type SummarizeResponse = {
 const AI_BASE = (process.env.AI_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 const AI_TOKEN = process.env.INTERNAL_AUTH_TOKEN || process.env.AI_SERVICE_TOKEN || "dev-token";
 
+export class AIRequestError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "AIRequestError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function request<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${AI_BASE}${path}`, {
     method: "POST",
@@ -44,7 +56,22 @@ async function request<T>(path: string, body: unknown): Promise<T> {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(`AI ${path} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
+    let message = `AI ${path} failed`;
+    let code: string | undefined;
+    if (detail) {
+      try {
+        const payload = JSON.parse(detail) as { error?: unknown; code?: unknown };
+        if (typeof payload.error === "string" && payload.error.trim()) {
+          message = payload.error;
+        }
+        if (typeof payload.code === "string" && payload.code.trim()) {
+          code = payload.code;
+        }
+      } catch {
+        // Keep the provider response opaque when it is not our JSON error shape.
+      }
+    }
+    throw new AIRequestError(message, response.status, code);
   }
 
   return response.json() as Promise<T>;

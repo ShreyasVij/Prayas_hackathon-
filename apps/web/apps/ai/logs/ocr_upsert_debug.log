@@ -96,3 +96,51 @@ Patient: Kagstro Woods
 Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
 Alex Thompson, M.D.
 Intern
+[2026-09-19T16:29:56.762Z] [POST] initialMeta: {"patient_name":"shreyas vij","dob":null,"doctor_name":null,"diagnosis":null,"summary":null,"report_date":null,"medications":[],"vitals":[{"label":"Hemoglobin (Hb)","value":15,"unit":"g/dL"},{"label":"Red Blood Cells (RBC)","value":10.7,"unit":"g/dL"},{"label":"Creatinine","value":10.7,"unit":"g/dL"},{"label":"Glucose","value":1.7,"unit":"mg/dL"}],"raw_text":"MediLocker\n88 Dashboard\nDocuments\n& Family\nAppointments\nA Emergency\nshreyas vij\nPatient\nWelcome back, shreyas vij\nHere's an overview of your health records.\nS Refresh Health Data\nHealth Overview\nRecent readings from your medical records. For\ninterpretation, please consult your healthcare provider.\n• Comprehensive Health Summary\n• 1 document analyzed • # Generated Jan 21, 2026\n-\no Blood Tests\nHemoglobin\n15 g/dl\nWhat it means: No explanation available (Al\nreturned unexpected format).\nJan 21, 2026\n• ab\nPlatelets\n3.5 lakhs/cumm\nWhat it means: No explanation available (Al\nreturned unexpected format).\nJan 21,2026 lab\nCurrent Health Status\nThe patient demonstrates mild anemia (low hemoglobin) and mildly impaired kidney function\nbased on the provided documents. Vital signs appear to be otherwise stable.\nIdentified Medical Conditions\nMild iron-deficiency anemia is indicated by a hemoglobin level of 10.7 g/dL. A creatinine level\nof 1.7 mg/dL suggests reduced kidney filtration that merits monitoring.\nRecent Test Results Summary\nThe key lab findings include: Hemoglobin 10.7 g/dL (low), RBC 3.6 million/pL (low), Creatinine\n1.7 mg/dL (elevated), and Fasting glucose 112 mg/dL (borderline). These values should be\ncorrelated with clinical history and repeat testing."}
+[2026-09-19T16:29:56.762Z] [POST] initialMeta.raw_text: MediLocker
+88 Dashboard
+Documents
+& Family
+Appointments
+A Emergency
+shreyas vij
+Patient
+Welcome back, shreyas vij
+Here's an overview of your health records.
+S Refresh Health Data
+Health Overview
+Recen
+[2026-09-19T16:30:35.069Z] [POST] Upserting OCR output: id=e5ceb958-64ee-4d39-b9b8-5c34a338ba1f:v1, text=MediLocker
+88 Dashboard
+Documents
+& Family
+Appointments
+A Emergency
+shreyas vij
+Patient
+Welcome back, shreyas vij
+Here's an overview of your health records.
+S Refresh Health Data
+Health Overview
+Recen
+[2026-09-19T16:53:04.021Z] [POST] initialMeta: {"patient_name":"Kagstro Woods","dob":"1982-06-15","doctor_name":"Alex Thompson, M.D.","diagnosis":null,"summary":"The document provides results for a Complete Blood Count (CBC) and Basic Metabolic Panel (BMP) for Kagstro Woods, showing several values outside of the provided reference ranges.","report_date":"2024-04-24","medications":[],"vitals":[{"label":"White Blood Cells","value":"3.2","unit":"ths/dL"},{"label":"Hematocrit","value":"48.1","unit":"%"},{"label":"Mean Corpuscular Volume (MCV)","value":"105","unit":"fL"},{"label":"Platelet Count","value":"507","unit":"lakh/uL"},{"label":"Calcium","value":"8.1","unit":"mg/dL"},{"label":"ALT","value":"68","unit":"U/L"},{"label":"Total Bilirubin","value":"2.1","unit":"mg/dL"},{"label":"Chloride","value":"110","unit":"mmo//L"},{"label":"Bicarbonate","value":"18","unit":"mmo//L"}],"raw_text":"R2 Medical\n1234 Health St, Suite 567\nCityville, ST 12345\n(555) 123-4567\nR Medical\nMEDICAL REPORT\nPatient: Kagstro Woods\nDate of Birth: 06/15/1982 (41 years) Date: 04/24/2024\nAlex Thompson, M.D.\nInternal Medicine\nComplete Blood Count (CBC)\nTest\nWhite Blood Cells\nResult\n3.2 ths/dL\nHematocrit\n48.1 %\nMean Corpuscular\nVolume (MCV)\nPlatelet Count\n105 fL\n507 lakh/uL\nBasic Metabolic Panel (BMP)\nTest\nCalcium\nALT\nResult\n8.1 mg/dL\n68 U/L\nTotal Bilirubin\nChloride\nBicarbonate\n2.1 mg/dL\n110 mmo//L\n18 mmo//L\nFlag\nLow\nHigh\nHigh\nHigh\nFlag\nLow\nHigh\nHigh\nHigh\nLow\n(555) 123-4567\nReference Range\n4.0 - 11.0 thousand/ul\n37 - 47% (females)\n80 - 100 fL\n150-450 lskh/uL\nReference Range\n8.5 - 10.2 mg/dL\n7 - 56 UrL\n0.1 - 1.2 mg/dL\n98 - 107 mmol/L\n22 - 29 mmol/L"}
+[2026-09-19T16:53:04.022Z] [POST] initialMeta.raw_text: R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern
+[2026-09-19T16:53:48.205Z] [POST] Upserting OCR output: id=0adc4fe8-358c-472b-9993-884f54393f93:v1, text=R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern

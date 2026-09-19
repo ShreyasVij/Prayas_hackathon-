@@ -37,6 +37,26 @@ class ProviderUnavailableError(AIServiceError):
     status_code = 502
 
 
+class ProviderRateLimitedError(AIServiceError):
+    code = "provider_rate_limited"
+    status_code = 429
+
+
+class ProviderAuthError(AIServiceError):
+    code = "provider_auth_failed"
+    status_code = 502
+
+
+class ProviderBadRequestError(AIServiceError):
+    code = "provider_bad_request"
+    status_code = 502
+
+
+class ProviderModelUnavailableError(AIServiceError):
+    code = "provider_model_unavailable"
+    status_code = 502
+
+
 class InvalidModelOutputError(AIServiceError):
     code = "invalid_model_output"
     status_code = 502
