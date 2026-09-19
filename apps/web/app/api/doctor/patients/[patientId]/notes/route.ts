@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { DoctorDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
@@ -21,14 +22,15 @@ export async function GET(
   { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has doctor role
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
     if (!user?.roles?.includes("doctor")) {
       return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
@@ -38,7 +40,7 @@ export async function GET(
     const doctors = await getCollection<DoctorDocument>("doctors");
     const doctor = await doctors.findOne({ 
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });
@@ -78,14 +80,15 @@ export async function POST(
   { params }: { params: Promise<{ patientId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has doctor role
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
     
     if (!user?.roles?.includes("doctor")) {
       return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
@@ -95,7 +98,7 @@ export async function POST(
     const doctors = await getCollection<DoctorDocument>("doctors");
     const doctor = await doctors.findOne({ 
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });

@@ -6,7 +6,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 
 interface CreateNfcTokenModalProps {
   profileId: string;
@@ -21,7 +20,6 @@ export const CreateNfcTokenModal: React.FC<CreateNfcTokenModalProps> = ({
   onClose,
   isOpen,
 }) => {
-  const { data: session } = useSession();
   const [deviceName, setDeviceName] = useState('');
   const [otpRequired, setOtpRequired] = useState(true);
   const [isLoading, setIsLoading] = useState(false);

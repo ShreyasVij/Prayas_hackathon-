@@ -53,3 +53,78 @@ create index if not exists profiles_role_idx on public.profiles (role);
 
 -- GIN index for fast querying inside the JSONB data column
 create index if not exists profiles_data_gin_idx on public.profiles using gin (data);
+
+-- ==========================================
+-- DOCTORS TABLE
+-- ==========================================
+create table public.doctors (
+  id uuid references public.profiles (id) on delete cascade not null primary key,
+  specialty text not null,
+  verified boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.doctors enable row level security;
+
+create policy "Anyone can view verified doctors"
+  on public.doctors for select
+  using ( verified = true );
+
+create policy "Users can view their own doctor record"
+  on public.doctors for select
+  using ( auth.uid() = id );
+
+create policy "Doctors can update their own record"
+  on public.doctors for update
+  using ( auth.uid() = id );
+
+-- ==========================================
+-- MEDICAL RECORDS TABLE
+-- ==========================================
+create table public.medical_records (
+  id uuid default gen_random_uuid() primary key,
+  patient_id uuid references public.profiles (id) on delete cascade not null,
+  document_url text not null,
+  document_type text not null,
+  disease_id text not null,
+  ai_prediction jsonb,
+  status text check (status in ('pending', 'reviewed')) default 'pending' not null,
+  doctor_id uuid references public.doctors (id) on delete set null,
+  doctor_review text,
+  is_accurate boolean,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.medical_records enable row level security;
+
+create policy "Patients can insert their own medical records"
+  on public.medical_records for insert
+  with check ( auth.uid() = patient_id );
+
+create policy "Patients can view their own medical records"
+  on public.medical_records for select
+  using ( auth.uid() = patient_id );
+
+create policy "Doctors can view pending records"
+  on public.medical_records for select
+  using ( 
+    exists (
+      select 1 from public.profiles p 
+      where p.id = auth.uid() and p.role = 'doctor'
+    )
+  );
+
+create policy "Doctors can view records they reviewed"
+  on public.medical_records for select
+  using ( doctor_id = auth.uid() );
+
+create policy "Doctors can update medical records for review"
+  on public.medical_records for update
+  using ( 
+    exists (
+      select 1 from public.profiles p 
+      where p.id = auth.uid() and p.role = 'doctor'
+    )
+  );

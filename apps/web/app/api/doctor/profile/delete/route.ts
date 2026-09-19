@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { UserDocument } from "@db/users";
 import type { DoctorDocument } from "@db/doctors";
@@ -20,16 +21,17 @@ import type { DoctorDocument } from "@db/doctors";
  */
 export async function DELETE(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get user
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: session.user.email });
+    const user = await users.findOne({ email: authUser.email });
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -41,7 +43,7 @@ export async function DELETE(req: Request) {
     const doctors = await getCollection<DoctorDocument>("doctors");
     const doctor = await doctors.findOne({
       $or: [
-        { email: session.user.email },
+        { email: authUser.email },
         { userId: user._id }
       ]
     });

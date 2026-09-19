@@ -1,4 +1,4 @@
-import { getIdentity } from "@/lib/server/auth";
+import { createClient } from "@/utils/supabase/server";
 import { getUsersCollection } from "@/lib/models/User";
 import { getFamiliesCollection } from "@/lib/server/Family";
 import { ObjectId } from "mongodb";
@@ -29,9 +29,10 @@ function getInitials(name?: string, email?: string): string {
 }
 
 export default async function FamilyPage() {
-  const { session } = await getIdentity();
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!session?.user?.email) {
+  if (!authUser?.email) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 max-w-md w-full text-center">
@@ -45,7 +46,7 @@ export default async function FamilyPage() {
   const users = await getUsersCollection();
   const families = await getFamiliesCollection();
 
-  const user = await users.findOne({ email: session.user.email });
+  const user = await users.findOne({ email: authUser.email });
 
   if (!user?.familyId) {
     return (
@@ -132,7 +133,7 @@ export default async function FamilyPage() {
               </div>
             ) : (
               memberDetails.map((member) => {
-                const isCurrentUser = member.email === session.user?.email;
+                const isCurrentUser = member.email === authUser?.email;
                 const memberRole = member.familyRole || "member";
                 
                 return (

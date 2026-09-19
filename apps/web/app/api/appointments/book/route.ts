@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { AppointmentDocument, DoctorDocument, DoctorFileDocument } from "@db/doctors";
 import type { ProfileDocument } from "@db/profiles";
@@ -30,14 +31,15 @@ import { ObjectId } from "mongodb";
  */
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get patient user
     const users = await getCollection<UserDocument>("users");
-    const patient = await users.findOne({ email: session.user.email });
+    const patient = await users.findOne({ email: authUser.email });
 
     if (!patient) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
@@ -113,7 +115,7 @@ export async function POST(req: Request) {
         _id: new ObjectId(),
         doctorId: doctor._id,
         patientId: patient._id,
-        patientName: patient.name || session.user.name || "Anonymous",
+        patientName: patient.name || authUser.name || "Anonymous",
         patientEmail: patient.email, // Save patient email for notifications
         patientAge: patientAge || 0, // 0 indicates not provided
         patientGender: patientGender || "Other",
@@ -142,7 +144,7 @@ export async function POST(req: Request) {
         const denyUrl = `${baseUrl}/api/appointments/update-status?appointmentId=${newAppointment._id.toString()}&status=rejected`;
         const emailTemplate = getRequestEmailTemplate({
           doctorName: doctor.name || "Doctor",
-          patientName: patient.name || session.user.name || "Anonymous",
+          patientName: patient.name || authUser.name || "Anonymous",
           appointmentTime: `${date} ${time}`,
           acceptUrl,
           denyUrl,

@@ -1,13 +1,13 @@
 "use client";
 
 import { User, LogOut, LayoutDashboard, FileText, AlertTriangle, Calendar, ClipboardList, UsersRound, Menu, X, Home } from "lucide-react";
-import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   DropdownMenu,
@@ -35,14 +35,19 @@ const doctorNavItems = [
   { label: "Patient Records", href: "/doctor", icon: ClipboardList },
 ];
 
-export function AppNavbar({ userName = "Patient", userRole = "patient" }: AppNavbarProps) {
+export function AppNavbar({ userName, userRole = "patient" }: AppNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const isAuthed = status === "authenticated";
-  const effectiveUserName = isAuthed ? (session?.user?.name || session?.user?.email || userName) : userName;
+  const supabase = createClient();
+  const isAuthed = !!userName;
+  const effectiveUserName = userName || "Patient";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/home");
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -204,7 +209,7 @@ export function AppNavbar({ userName = "Patient", userRole = "patient" }: AppNav
                   className="text-destructive focus:bg-destructive/10 focus:text-destructive rounded-lg py-2.5 cursor-pointer"
                   onSelect={(event) => {
                     event.preventDefault();
-                    signOut({ callbackUrl: "/home" });
+                    handleSignOut();
                   }}
                 >
                   <LogOut className="mr-3 h-4 w-4" /> Sign Out
@@ -270,7 +275,7 @@ export function AppNavbar({ userName = "Patient", userRole = "patient" }: AppNav
                     type="button"
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      signOut({ callbackUrl: "/home" });
+                      handleSignOut();
                     }}
                     className="mt-2 flex w-full items-center gap-3 px-3.5 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg"
                   >

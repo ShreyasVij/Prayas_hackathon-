@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { createClient } from "@/utils/supabase/client";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import { OnboardingProgressBar } from "@/components/onboarding/OnboardingProgressBar";
 import { InteractiveTiltCard } from "@/components/onboarding/InteractiveTiltCard";
@@ -104,7 +104,8 @@ const itemVariants: Variants = {
 function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, update: updateSession } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
   const { theme, setTheme } = useTheme();
 
   const stepParam = parseInt(searchParams.get("step") || "2", 10);
@@ -145,13 +146,16 @@ function OnboardingContent() {
 
   // Sync session details into initial state
   useEffect(() => {
-    if (session?.user) {
-      setForm((prev) => ({
-        ...prev,
-        name: prev.name || session.user?.name || "",
-      }));
-    }
-  }, [session]);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSessionUser(user);
+        setForm((prev) => ({
+          ...prev,
+          name: prev.name || user.user_metadata?.name || "",
+        }));
+      }
+    });
+  }, []);
 
   // Load existing profile if any (e.g. partial draft from Supabase)
   useEffect(() => {
@@ -343,14 +347,6 @@ function OnboardingContent() {
 
       if (!res.ok) {
         throw new Error("Failed to save profile to Supabase. Please retry.");
-      }
-
-      if (updateSession) {
-        try {
-          await updateSession({ onboardingCompleted: true, isNewUser: false });
-        } catch {
-          // ignore
-        }
       }
 
       setSaveSuccess(true);
@@ -588,7 +584,10 @@ function OnboardingContent() {
               >
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: "/auth" })}
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    router.push("/auth");
+                  }}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-all"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import React from "react";
 import { ShieldAlert, ArrowRight, User } from "lucide-react";
 
@@ -15,14 +15,15 @@ function getInitials(name?: string | null, email?: string | null) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function Navbar() {
-  const { data: session, status } = useSession();
+export default function Navbar({ userName, userRole }: { userName?: string, userRole?: string }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+  const isAuthed = !!userName;
 
-  const user = session?.user;
-  const initials = getInitials(user?.name ?? null, user?.email ?? null);
+  const initials = getInitials(userName);
 
-  const role = (user as any)?.role as string | undefined;
+  const role = userRole as string | undefined;
   const links = [
     { href: "/dashboard", label: "Dashboard", show: true },
     { href: "/documents", label: "Documents", show: true },
@@ -83,7 +84,7 @@ export default function Navbar() {
               <span>Emergency</span>
             </Link>
 
-            {status !== "authenticated" ? (
+            {!isAuthed ? (
               <Link
                 href="/auth"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all"
@@ -96,12 +97,15 @@ export default function Navbar() {
                 <Link
                   href="/profile"
                   className="w-9 h-9 rounded-full bg-teal-100 border border-teal-300 text-teal-800 text-xs font-bold flex items-center justify-center hover:ring-2 hover:ring-teal-500/20 transition-all"
-                  title={user?.name ?? user?.email ?? "Profile"}
+                  title={userName ?? "Profile"}
                 >
                   {initials}
                 </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    router.push("/home");
+                  }}
                   className="text-xs text-zinc-500 hover:text-zinc-800 font-medium px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
                 >
                   Sign out

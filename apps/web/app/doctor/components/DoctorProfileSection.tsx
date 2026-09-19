@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -41,7 +41,8 @@ export interface DoctorProfileData {
 }
 
 export function DoctorProfileSection() {
-  const { data: session } = useSession();
+  const supabase = createClient();
+  const [sessionUser, setSessionUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [doctorData, setDoctorData] = useState<DoctorProfileData>({
     name: "",
@@ -58,6 +59,12 @@ export function DoctorProfileSection() {
     consultationsCompleted: 0,
     status: "On Duty"
   });
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setSessionUser(user);
+    });
+  }, []);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -84,8 +91,8 @@ export function DoctorProfileSection() {
 
           if (isSubscribed) {
             setDoctorData({
-              name: d.name || session?.user?.name || (session?.user?.email ? session.user.email.split("@")[0] : "Healthcare Provider"),
-              email: d.email || session?.user?.email || null,
+              name: d.name || sessionUser?.user_metadata?.name || (sessionUser?.email ? sessionUser.email.split("@")[0] : "Healthcare Provider"),
+              email: d.email || sessionUser?.email || null,
               specialization: p.specialization || null,
               licenseNumber: p.licenseNumber || null,
               hospitalAffiliation: p.hospitalAffiliation || null,
@@ -103,8 +110,8 @@ export function DoctorProfileSection() {
           // If session user exists
           if (isSubscribed) {
             setDoctorData({
-              name: session?.user?.name || (session?.user?.email ? session.user.email.split("@")[0] : "Healthcare Provider"),
-              email: session?.user?.email || null,
+              name: sessionUser?.user_metadata?.name || (sessionUser?.email ? sessionUser.email.split("@")[0] : "Healthcare Provider"),
+              email: sessionUser?.email || null,
               specialization: null,
               licenseNumber: null,
               hospitalAffiliation: null,
@@ -131,7 +138,7 @@ export function DoctorProfileSection() {
     return () => {
       isSubscribed = false;
     };
-  }, [session]);
+  }, [sessionUser]);
 
   const initials = doctorData.name
     ? doctorData.name

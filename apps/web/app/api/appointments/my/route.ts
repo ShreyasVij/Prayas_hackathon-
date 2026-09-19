@@ -1,6 +1,7 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server/authOptions";
+
+
 import { getCollection } from "@/lib/server/db";
 import type { AppointmentDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
@@ -11,14 +12,15 @@ import type { UserDocument } from "@db/users";
  */
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get patient user
     const users = await getCollection<UserDocument>("users");
-    const patient = await users.findOne({ email: session.user.email });
+    const patient = await users.findOne({ email: authUser.email });
 
     if (!patient) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });

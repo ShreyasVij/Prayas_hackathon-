@@ -1,13 +1,15 @@
+import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+
 import crypto from 'crypto';
 import { markTokenPrinted } from '@/../../packages/db';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession();
+    const supabase = await createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
