@@ -6,7 +6,7 @@ import type { DoctorDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
 import type { DocumentDocument } from "@db/documents";
 import type { ProfileDocument } from "@db/profiles";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 // GET - Fetch all documents for a specific patient
 export async function GET(

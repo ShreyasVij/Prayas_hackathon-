@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/server/authOptions";
 import { getCollection } from "@/lib/server/db";
 import type { DoctorDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 interface DoctorPatientNote {
   _id?: ObjectId;

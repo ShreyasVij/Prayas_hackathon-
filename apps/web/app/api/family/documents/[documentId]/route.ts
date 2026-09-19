@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 import { authOptions } from "@/lib/server/authOptions";
 import { getUsersCollection } from "@/lib/models/User";
 import { getFamiliesCollection } from "@/lib/server/Family";

@@ -5,7 +5,7 @@ import { getCollection } from "@/lib/server/db";
 import type { AppointmentDocument, DoctorDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
 import type { ProfileDocument } from "@db/profiles";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 // GET - Fetch appointments for the logged-in doctor
 export async function GET(req: Request) {

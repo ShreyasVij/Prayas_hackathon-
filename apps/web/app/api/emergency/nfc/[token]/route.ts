@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/server/ids';
 import {
   findNfcTokenByHash,
   updateTokenAccess,

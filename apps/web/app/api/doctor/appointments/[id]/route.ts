@@ -5,7 +5,7 @@ import { getCollection } from "@/lib/server/db";
 import { createOAuth2Client, deleteCalendarEvent } from "@/lib/server/googleCalendar";
 import type { AppointmentDocument, DoctorDocument, DoctorFileDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 // PATCH - Update appointment (status, notes, etc.)
 export async function PATCH(

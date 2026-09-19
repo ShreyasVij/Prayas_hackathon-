@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DRY_RUN, MOCK_EMERGENCY_TOKEN, MOCK_ACTIVE_TOKENS } from '@/lib/dry-run/mock-data';
 import { getServerSession } from 'next-auth';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/server/ids';
 import crypto from 'crypto';
 import QRCode from 'qrcode';
 import {

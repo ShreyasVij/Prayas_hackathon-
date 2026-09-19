@@ -5,7 +5,7 @@ import { getCollection } from "@/lib/server/db";
 import type { DoctorDocument, DoctorProfile } from "@db/doctors";
 import type { UserDocument } from "@db/users";
 import { generateDoctorCode } from "@db/utils";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 function toNullIfEmpty<T extends string | undefined | null>(v: T): T | null {
   if (v === undefined || v === null) return null;
@@ -194,8 +194,9 @@ export async function POST(req: Request) {
       }
 
       await doctors.insertOne({
-        _id: new ObjectId(),
-        doctorCode: normalizedCode, // CRITICAL: Store normalized code (no hyphens)
+        _id: user._id,
+        id: String(user._id),
+        doctorCode: normalizedCode,
         userId: user._id,
         email: session.user.email,
         name: session.user.name || "",

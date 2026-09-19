@@ -175,138 +175,58 @@ export interface AuditDocument {
 }
 
 export async function initializeDatabase(): Promise<void> {
-  // no-op mock
+  return undefined;
 }
 
-export async function createEmergencyToken(params: any): Promise<any> {
-  return { id: 'mock-em-token', token: 'mock-token-string', ...params };
-}
-
-export async function logEmergencyAction(params: any): Promise<any> {
-  return true;
-}
-
-export async function getActiveTokensForProfile(profileId: string): Promise<any[]> {
-  return [];
-}
-
-export async function regenerateToken(params: any): Promise<any> {
-  return { token: 'mock-regenerated-token' };
-}
-
-export async function markTokenPrinted(tokenId: string): Promise<any> {
-  return true;
-}
-
-export async function findTokenByHash(tokenHash: string): Promise<any> {
-  return null;
-}
-
-export async function markAccessNotificationSent(tokenId: string): Promise<any> {
-  return true;
-}
-
-export async function getTokensForProfile(profileId: string): Promise<any[]> {
-  return [];
-}
-
-export async function revokeNfcToken(tokenId: string): Promise<any> {
-  return true;
-}
-
-export async function findNfcTokenByHash(tokenHash: string): Promise<any> {
-  return null;
-}
+export {
+  createEmergencyToken,
+  logEmergencyAction,
+  getActiveTokensForProfile,
+  regenerateToken,
+  markTokenPrinted,
+  findTokenByHash,
+  markAccessNotificationSent,
+  getTokensForProfile,
+  revokeNfcToken,
+  findNfcTokenByHash,
+  detectSuspiciousActivity,
+  revokeToken,
+  revokeAllActiveTokensForProfile,
+  updateTokenAccess,
+  createAccessLog,
+  createNfcToken,
+  getTokensForUser,
+  addPreAuthorizedDoctor,
+  createOtpSession,
+  incrementOtpRequest,
+  getActiveOtpForToken,
+  verifyOtpSession,
+  authorizeDoctorForToken,
+  findOtpSession,
+  verifyOtp,
+  recordOtpAttempt,
+  flagOtpAsAnomalous,
+  markOtpFailed,
+  incrementOtpVerified,
+  countRecentFailedAttempts,
+} from "@/lib/server/emergencyStore";
 
 export async function logTokenAccess(params: any): Promise<any> {
   return true;
 }
 
-export async function detectSuspiciousActivity(params: any): Promise<any> {
-  return { suspicious: false };
-}
-
-export async function revokeToken(params: any): Promise<any> {
-  return true;
-}
-
-export async function revokeAllActiveTokensForProfile(profileId: string): Promise<any> {
-  return true;
-}
-
-export async function updateTokenAccess(tokenId: string, data: any): Promise<any> {
-  return true;
-}
-
-export async function createAccessLog(params: any): Promise<any> {
-  return true;
-}
-
-export async function createNfcToken(params: any): Promise<any> {
-  return { id: 'mock-nfc-token', ...params };
-}
-
-export async function getTokensForUser(userId: string): Promise<any[]> {
-  return [];
-}
-
 export interface PreAuthorizedDoctor {
-  doctorId: string;
+  doctorId?: string;
   doctorName?: string;
   hospitalName?: string;
-  authorizedAt: Date;
-}
-
-export async function addPreAuthorizedDoctor(tokenId: string, doc: PreAuthorizedDoctor): Promise<any> {
-  return true;
-}
-
-export async function createOtpSession(params: any): Promise<any> {
-  return { id: 'mock-otp-session', ...params };
-}
-
-export async function incrementOtpRequest(params: any): Promise<any> {
-  return 1;
-}
-
-export async function getActiveOtpForToken(tokenHash: string): Promise<any> {
-  return null;
-}
-
-export async function verifyOtpSession(sessionId: string, otp: string): Promise<boolean> {
-  return true;
-}
-
-export async function authorizeDoctorForToken(tokenId: string, doctorId: string): Promise<any> {
-  return true;
-}
-
-export async function findOtpSession(sessionId: string): Promise<any> {
-  return null;
-}
-
-export async function verifyOtp(sessionId: string, otp: string): Promise<boolean> {
-  return true;
-}
-
-export async function recordOtpAttempt(params: any): Promise<any> {
-  return true;
-}
-
-export async function flagOtpAsAnomalous(params: any): Promise<any> {
-  return true;
-}
-
-export async function markOtpFailed(params: any): Promise<any> {
-  return true;
-}
-
-export async function incrementOtpVerified(params: any): Promise<any> {
-  return 1;
-}
-
-export async function countRecentFailedAttempts(params: any): Promise<number> {
-  return 0;
+  doctorEmail?: string;
+  fullAccessGranted?: boolean;
+  grantedAt?: Date;
+  grantedByUserId?: any;
+  expiresAt?: Date | null;
+  notes?: string;
+  authorizedAt?: Date;
+  id?: string;
 }
 
 export * from './doctors';

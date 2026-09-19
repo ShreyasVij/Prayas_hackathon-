@@ -6,7 +6,7 @@ import type { AppointmentDocument, DoctorDocument, DoctorFileDocument } from "@d
 import type { ProfileDocument } from "@db/profiles";
 import type { UserDocument } from "@db/users";
 import type { DocumentDocument } from "@db/documents";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 /**
  * POST /api/appointments/book

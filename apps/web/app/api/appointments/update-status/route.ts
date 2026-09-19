@@ -91,7 +91,7 @@ import { getRejectedEmailTemplate } from "@/lib/server/emails/appointment-reject
 import { createOAuth2Client, createCalendarEvent, refreshTokensIfNeeded } from "@/lib/server/googleCalendar";
 import type { AppointmentDocument, DoctorDocument } from "@db/doctors";
 import type { UserDocument } from "@db/users";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 
 /**
  * POST /api/appointments/update-status

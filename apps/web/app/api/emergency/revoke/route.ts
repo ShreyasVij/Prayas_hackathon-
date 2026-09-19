@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from '@/lib/server/ids';
 import crypto from 'crypto';
 import {
   revokeToken,

@@ -1,7 +1,7 @@
 import { getIdentity } from "@/lib/server/auth";
 import { getUsersCollection } from "@/lib/models/User";
 import { getFamiliesCollection } from "@/lib/server/Family";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 import Link from "next/link";
 import { CreateFamilyButton } from "@/components/CreateFamilyButton";
 import FamilyMemberCard from "@/components/FamilyMemberCard";

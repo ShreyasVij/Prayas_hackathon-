@@ -1,33 +1,17 @@
-import { Collection, ObjectId } from "mongodb";
-import { getDbClient } from "@/lib/server/db";
-
+import { getCollection } from "@/lib/server/db";
+import { ObjectId } from "@/lib/server/ids";
 
 export interface FamilyDocument {
   _id: ObjectId;
-  ownerId: ObjectId;
-  members: ObjectId[];
+  ownerId: string;
+  members: string[];
   createdAt: Date;
 }
 
-
-export async function getFamiliesCollection(): Promise<
-  Collection<FamilyDocument>
-> {
-  const db = await getDbClient();
-  return db.collection<FamilyDocument>("families");
+export async function getFamiliesCollection() {
+  return getCollection<FamilyDocument>("families");
 }
 
-
 export async function ensureFamilyIndexes() {
-  const families = await getFamiliesCollection();
-
-  await families.createIndex(
-    { ownerId: 1 },
-    { name: "idx_family_owner" }
-  );
-
-  await families.createIndex(
-    { members: 1 },
-    { name: "idx_family_members" }
-  );
+  return undefined;
 }

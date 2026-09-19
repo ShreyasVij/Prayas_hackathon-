@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/server/authOptions";
 import { getCollection } from "@/lib/server/db";
 import type { UserDocument } from "@db/users";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "@/lib/server/ids";
 import type { DocumentDocument } from "@db/documents";
 
 /**
