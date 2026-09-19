@@ -4,7 +4,7 @@ import re
 from typing import Any
 
 from ..core.config import get_settings
-from ..core.safety import clean_text, parse_json_value
+from ..core.safety import InvalidModelOutputError, clean_text, parse_json_value
 from ..runtime.client import RuntimeClient
 
 
@@ -38,18 +38,15 @@ class TitleGenerationService:
             return fallback
         template = (get_settings().prompt_dir / "diagnostic" / "title.txt").read_text(encoding="utf-8")
         prompt = template.replace("{{DOC_TYPE}}", clean_text(doc_type) or "other").replace("{{OCR_TEXT}}", text)
-        try:
-            result = await self.runtime.generate_text(
-                prompt,
-                system_instruction="Return only valid JSON for a short medical document title.",
-                temperature=0.3,
-                max_output_tokens=100,
-            )
-            data = parse_json_value(result.text)
-            title = clean_text(data.get("title")) if isinstance(data, dict) else ""
-            if title and _is_acceptable_title(title):
-                confidence = float(data.get("confidence", 0.8)) if isinstance(data, dict) else 0.8
-                return {"title": title, "confidence": max(0.0, min(confidence, 1.0))}
-        except Exception:
-            pass
-        return fallback
+        result = await self.runtime.generate_text(
+            prompt,
+            system_instruction="Return only valid JSON for a short medical document title.",
+            temperature=0.3,
+            max_output_tokens=100,
+        )
+        data = parse_json_value(result.text)
+        title = clean_text(data.get("title")) if isinstance(data, dict) else ""
+        if not title or not _is_acceptable_title(title):
+            raise InvalidModelOutputError("Model returned an invalid document title")
+        confidence = float(data.get("confidence", 0.8)) if isinstance(data, dict) else 0.8
+        return {"title": title, "confidence": max(0.0, min(confidence, 1.0))}

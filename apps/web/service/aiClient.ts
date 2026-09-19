@@ -1,3 +1,10 @@
+type ExtractIdentity = {
+  documentId?: string;
+  versionId?: string;
+  storageKey?: string;
+  userId?: string;
+  ownerId?: string;
+};
 type ExtractFile = { fileName: string; contentBase64: string };
 type ExtractedDocument = {
   patient_name?: string | null;
@@ -43,19 +50,29 @@ async function request<T>(path: string, body: unknown): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function callExtract(params: ExtractFile) {
+export function callExtract(params: ExtractFile & ExtractIdentity) {
   return request<ExtractResponse>("/extract", {
     file_name: params.fileName,
     content_base64: params.contentBase64,
+    document_id: params.documentId,
+    version_id: params.versionId,
+    storage_key: params.storageKey,
+    user_id: params.userId,
+    owner_id: params.ownerId,
   });
 }
 
-export function callExtractMulti(params: { files: ExtractFile[] }) {
+export function callExtractMulti(params: { files: ExtractFile[] } & ExtractIdentity) {
   return request<ExtractResponse>("/extract/multi", {
     files: params.files.map((file) => ({
       file_name: file.fileName,
       content_base64: file.contentBase64,
     })),
+    document_id: params.documentId,
+    version_id: params.versionId,
+    storage_key: params.storageKey,
+    user_id: params.userId,
+    owner_id: params.ownerId,
   });
 }
 

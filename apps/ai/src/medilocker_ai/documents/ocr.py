@@ -130,5 +130,5 @@ class OCRService:
         except httpx.HTTPError as exc:
             last_error = exc
 
-        # Keep provider failure explicit. The old service returned no text on OCR failure.
-        return {"text": None, "engine": "ocr.space", "confidence": None, "error": str(last_error) if last_error else None}
+        # Do not let a configured OCR provider failure look like a successful extraction.
+        raise ProviderUnavailableError("OCR.Space could not process the document") from last_error

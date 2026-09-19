@@ -59,13 +59,28 @@ export async function POST(request: NextRequest) {
             const name = `${documentId}-page-${i + 1}`;
             files.push({ fileName: name, contentBase64: base64 });
           }
-          extract = await callExtractMulti({ files });
+          extract = await callExtractMulti({
+            files,
+            documentId,
+            versionId,
+            storageKey,
+            userId: payload.userId,
+            ownerId: payload.ownerId,
+          });
         } else if (storageKey) {
           // Single-file path (existing behavior)
           const signed = await createDownloadUrl({ storageKey, expiresIn: 900 });
           const base64 = await toBase64FromUrl(signed);
           const name = `${documentId}.bin`;
-          extract = await callExtract({ fileName: name, contentBase64: base64 });
+          extract = await callExtract({
+            fileName: name,
+            contentBase64: base64,
+            documentId,
+            versionId,
+            storageKey,
+            userId: payload.userId,
+            ownerId: payload.ownerId,
+          });
         } else {
           throw new Error('missing storageKey(s)');
         }

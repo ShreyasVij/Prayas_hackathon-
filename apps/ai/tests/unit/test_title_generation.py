@@ -1,5 +1,6 @@
 import pytest
 
+from medilocker_ai.core.safety import InvalidModelOutputError
 from medilocker_ai.documents.title_generation import TitleGenerationService
 from medilocker_ai.runtime.types import GenerationResult
 
@@ -11,8 +12,8 @@ class StubRuntime:
 
 @pytest.mark.asyncio
 async def test_title_rejects_too_many_words():
-    result = await TitleGenerationService(StubRuntime('{"title":"This Is Far Too Many Words For A Title","confidence":0.9}')).generate("long enough medical report text", "lab")
-    assert result["title"] == "Lab Report"
+    with pytest.raises(InvalidModelOutputError):
+        await TitleGenerationService(StubRuntime('{"title":"This Is Far Too Many Words For A Title","confidence":0.9}')).generate("long enough medical report text", "lab")
 
 
 @pytest.mark.asyncio

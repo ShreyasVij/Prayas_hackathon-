@@ -81,7 +81,10 @@ def test_extract_rejects_invalid_file():
     assert response.status_code == 415
 
 
-def test_extract_accepts_pdf_signature_without_ocr_key():
+def test_extract_accepts_pdf_signature_without_ocr_key(monkeypatch):
+    from medilocker_ai.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "ocr_space_api_key", None)
     encoded = base64.b64encode(b"%PDF-1.7\nmock pdf bytes").decode()
     response = client.post("/extract", headers=HEADERS, json={"file_name":"report.pdf","content_base64":encoded})
     assert response.status_code == 200

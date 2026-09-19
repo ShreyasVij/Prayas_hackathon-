@@ -15,6 +15,13 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   const files = formData.getAll("files").filter((f) => f instanceof File) as File[];
+  const identity = {
+    documentId: String(formData.get("documentId") || "") || undefined,
+    versionId: String(formData.get("versionId") || "") || undefined,
+    storageKey: String(formData.get("storageKey") || "") || undefined,
+    userId: String(formData.get("userId") || "") || undefined,
+    ownerId: String(formData.get("ownerId") || "") || undefined,
+  };
   if (!file && files.length === 0) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
@@ -27,11 +34,11 @@ export async function POST(request: NextRequest) {
         const contentBase64 = await toBase64(f);
         parts.push({ fileName: f.name || `page-${i + 1}`, contentBase64 });
       }
-      const result = await callExtractMulti({ files: parts });
+      const result = await callExtractMulti({ files: parts, ...identity });
       return NextResponse.json(result, { status: 200 });
     } else if (file) {
       const contentBase64 = await toBase64(file);
-      const result = await callExtract({ fileName: file.name, contentBase64 });
+      const result = await callExtract({ fileName: file.name, contentBase64, ...identity });
       return NextResponse.json(result, { status: 200 });
     } else {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
