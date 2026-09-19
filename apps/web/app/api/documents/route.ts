@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
       ]);
       const sumDoc = sumDocByDocumentId || (await summariesCol.findOne({ id: d.id, type: 'doc' } as any));
       const meta = d.metadata || {};
+      const originalName = d.originalName || d.fileName || meta.originalName || meta.fileName;
       // Preserve full AI summary payload (string or object) for viewer consumption.
       // Always prefer the latest summary stored in the `summaries` collection, falling back to any
       // legacy metadata.summary if a summaries entry is not present yet.
@@ -135,6 +136,7 @@ export async function GET(request: NextRequest) {
       const reportDate = (meta.report_date as string | undefined) || parseReportDate(ocr?.text);
       return {
         ...d,
+        originalName,
         summary,
         summary_full: summaryFull,
         mimeType: ver?.mimeType,
@@ -242,6 +244,9 @@ export async function POST(request: NextRequest) {
       id: docId,
       profileId,
       ownerUserId: actorId,
+      originalName: filesMulti.length > 0
+        ? filesMulti.map((uploadedFile) => uploadedFile.name).join(', ')
+        : file?.name,
       docType,
       storageKey,
       versionId,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Activity } from "lucide-react";
 
 interface Vital {
@@ -46,25 +46,32 @@ function toNumeric(val: string | number): number | null {
  * categories over time. Each data-point is one document date.
  */
 export function VitalsTrendChart({ groupedVitals, loading }: VitalsTrendChartProps) {
-  // Pick top 5 categories by data density
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+
+  // Keep categories with data available for individual trend selection.
   const seriesCategories = useMemo(() => {
     return Object.entries(groupedVitals)
       .filter(([, vitals]) => vitals.length > 0)
       .sort((a, b) => b[1].length - a[1].length)
-      .slice(0, 5)
       .map(([cat]) => cat);
   }, [groupedVitals]);
 
+  useEffect(() => {
+    if (seriesCategories.length === 0) {
+      setSelectedCategory("");
+    } else if (!seriesCategories.includes(selectedCategory)) {
+      setSelectedCategory(seriesCategories[0]);
+    }
+  }, [selectedCategory, seriesCategories]);
+
   // Build unified time-series data across all dates
   const chartData = useMemo(() => {
-    if (seriesCategories.length === 0) return [];
+    if (!selectedCategory) return [];
 
     // Collect all unique dates
     const allDates = new Set<string>();
-    for (const cat of seriesCategories) {
-      for (const v of groupedVitals[cat] ?? []) {
-        allDates.add(v.documentDate);
-      }
+    for (const v of groupedVitals[selectedCategory] ?? []) {
+      allDates.add(v.documentDate);
     }
 
     const sortedDates = Array.from(allDates).sort(
@@ -75,14 +82,11 @@ export function VitalsTrendChart({ groupedVitals, loading }: VitalsTrendChartPro
       const point: Record<string, string | number | null> = {
         date: formatDate(date),
       };
-      for (const cat of seriesCategories) {
-        const match = groupedVitals[cat]?.find((v) => v.documentDate === date);
-        const first = match ?? groupedVitals[cat]?.[0];
-        point[cat] = first ? toNumeric(first.value) : null;
-      }
+      const match = groupedVitals[selectedCategory]?.find((v) => v.documentDate === date);
+      point[selectedCategory] = match ? toNumeric(match.value) : null;
       return point;
     });
-  }, [groupedVitals, seriesCategories]);
+  }, [groupedVitals, selectedCategory]);
 
   if (loading) {
     return (
@@ -115,6 +119,23 @@ export function VitalsTrendChart({ groupedVitals, loading }: VitalsTrendChartPro
 
   return (
     <div className="p-2 pr-4">
+      <div className="flex items-center justify-between gap-3 px-2 pb-2">
+        <label htmlFor="vitals-trend-select" className="text-xs font-medium text-zinc-600">
+          Show trend
+        </label>
+        <select
+          id="vitals-trend-select"
+          value={selectedCategory}
+          onChange={(event) => setSelectedCategory(event.target.value)}
+          className="max-w-[65%] rounded-md border border-border bg-white px-2 py-1 text-xs text-zinc-700 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+        >
+          {seriesCategories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+      </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={plotData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
           <CartesianGrid
@@ -143,25 +164,18 @@ export function VitalsTrendChart({ groupedVitals, loading }: VitalsTrendChartPro
             }}
             cursor={{ stroke: "hsl(175 84% 32%)", strokeWidth: 1, strokeDasharray: "4 2" }}
           />
-          {seriesCategories.length > 1 && (
-            <Legend
-              wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-              iconType="circle"
-              iconSize={8}
-            />
-          )}
-          {seriesCategories.map((cat, i) => (
+          {selectedCategory && (
             <Line
-              key={cat}
+              key={selectedCategory}
               type="monotone"
-              dataKey={cat}
-              stroke={LINE_COLORS[i % LINE_COLORS.length]}
+              dataKey={selectedCategory}
+              stroke={LINE_COLORS[0]}
               strokeWidth={2}
-              dot={{ r: 3, fill: LINE_COLORS[i % LINE_COLORS.length], strokeWidth: 0 }}
+              dot={{ r: 3, fill: LINE_COLORS[0], strokeWidth: 0 }}
               activeDot={{ r: 5, strokeWidth: 2, stroke: "white" }}
               connectNulls
             />
-          ))}
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>

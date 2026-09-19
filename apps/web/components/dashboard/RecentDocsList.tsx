@@ -11,6 +11,10 @@ interface DocumentItem {
   originalName?: string;
   status?: string;
   processingStatus?: string;
+  docType?: string;
+  category?: string;
+  summary?: string;
+  summary_full?: unknown;
   uploadedAt?: string;
   createdAt?: string;
 }
@@ -54,6 +58,14 @@ export function RecentDocsList() {
   }, []);
 
   function resolveStatus(doc: DocumentItem): string {
+    const hasSummary =
+      (typeof doc.summary === "string" && doc.summary.trim().length > 0) ||
+      (typeof doc.summary_full === "string" && doc.summary_full.trim().length > 0) ||
+      (doc.summary_full !== null &&
+        typeof doc.summary_full === "object" &&
+        Object.keys(doc.summary_full).length > 0);
+    if (hasSummary) return "processed";
+
     const raw = doc.processingStatus || doc.status || "pending";
     const lower = raw.toLowerCase();
     if (lower === "completed" || lower === "processed") return "processed";
@@ -72,6 +84,13 @@ export function RecentDocsList() {
     } catch {
       return "";
     }
+  }
+
+  function formatCategory(doc: DocumentItem) {
+    const category = doc.category || doc.docType || "Other";
+    return category
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
   if (loading) {
@@ -116,8 +135,9 @@ export function RecentDocsList() {
     <div className="flex flex-col">
       <ul className="divide-y divide-border">
         {docs.map((doc) => {
-          const name = doc.originalName || doc.fileName || "Untitled";
           const date = formatDate(doc.uploadedAt || doc.createdAt);
+          const fileName = doc.originalName || doc.fileName || "Untitled";
+          const name = `${fileName} · ${date || "Recent"} · ${formatCategory(doc)}`;
           const status = resolveStatus(doc);
 
           return (
@@ -125,7 +145,6 @@ export function RecentDocsList() {
               <FileText className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={1.5} aria-hidden />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-zinc-800 truncate">{name}</p>
-                {date && <p className="text-[11px] text-muted-foreground">{date}</p>}
               </div>
               <StatusPill status={status} className="shrink-0" />
             </li>

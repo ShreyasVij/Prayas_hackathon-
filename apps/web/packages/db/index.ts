@@ -43,6 +43,8 @@ export interface DocumentDocument {
   id: string;
   profileId: string;
   ownerUserId?: string;
+  originalName?: string;
+  fileName?: string;
   title?: string;
   docType: 'prescription' | 'lab' | 'scan' | 'discharge' | 'other' | string;
   storageKey: string;
