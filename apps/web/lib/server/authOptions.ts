@@ -4,7 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getCollection } from "@/lib/server/db";
 import { sendWelcomeEmail } from "@/lib/server/emailHooks";
-import { getProfileJsonFromSupabase } from "@/lib/server/supabaseProfile";
+import { getProfileJsonFromSupabase, saveProfileJsonToSupabase } from "@/lib/server/supabaseProfile";
 
 export const authOptions: NextAuthOptions = {
   providers: [

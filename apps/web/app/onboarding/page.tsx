@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { OnboardingProgressBar } from "@/components/onboarding/OnboardingProgressBar";
 import { InteractiveTiltCard } from "@/components/onboarding/InteractiveTiltCard";
 import { FloatingField } from "@/components/onboarding/FloatingField";
@@ -64,7 +64,7 @@ interface OnboardingFormState {
 }
 
 // Spring physics animation variants for staggered entrance
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -75,7 +75,7 @@ const containerVariants = {
   },
 };
 
-const headerDropVariants = {
+const headerDropVariants: Variants = {
   hidden: { opacity: 0, y: -26 },
   visible: {
     opacity: 1,
@@ -88,7 +88,7 @@ const headerDropVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 28 },
   visible: {
     opacity: 1,
