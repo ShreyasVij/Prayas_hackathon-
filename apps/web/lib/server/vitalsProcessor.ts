@@ -4,7 +4,7 @@
 
 import { getCollection } from './db';
 import type { VitalReading } from '@/packages/db/userVitals';
-import { callVitalExplainBatchPrompt, callHealthSummaryPrompt } from '@/services/aiClient';
+import { callVitalExplainBatchPrompt, callHealthSummaryPrompt } from '@/service/aiClient';
 import type { OcrOutputDocument } from '@/packages/db/ocrOutputs';
 import { vitalsLogger, healthSummaryLogger } from './logger';
 
@@ -772,4 +772,3 @@ export async function regenerateHealthSummary(userId: string): Promise<void> {
     throw err;
   }
 }
-

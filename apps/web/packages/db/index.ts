@@ -309,3 +309,4 @@ export async function countRecentFailedAttempts(params: any): Promise<number> {
 
 export * from './doctors';
 export * from './utils';
+export * from './supabase';

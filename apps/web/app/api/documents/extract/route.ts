@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Buffer } from "buffer";
-import { callExtract, callExtractMulti } from "@/services/aiClient";
+import { callExtract, callExtractMulti } from "@/service/aiClient";
 
 // Ensure Node.js runtime so Buffer and server-side fetch behave consistently
 export const runtime = "nodejs";

@@ -1,0 +1,6 @@
+Generate a specific 2-5 word medical document title.
+Document type: {{DOC_TYPE}}
+Document text:
+{{OCR_TEXT}}
+Return only JSON: {"title": "specific title", "confidence": 0.8}.
+Avoid generic titles where possible.
