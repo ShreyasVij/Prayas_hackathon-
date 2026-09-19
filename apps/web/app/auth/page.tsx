@@ -2,7 +2,7 @@
 
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, Suspense, useState } from "react";
+import { useEffect, Suspense, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ShieldCheck, ArrowRight, Stethoscope, User, Sparkles, UserPlus, LogIn, Lock, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -13,6 +13,9 @@ function AuthContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Guard to guarantee redirect executes exactly once and stops render loops
+  const redirectedRef = useRef(false);
 
   // Mode: "signup" for new users (Create an account), "login" for old users (Login)
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
@@ -35,17 +38,26 @@ function AuthContent() {
 
   // Redirect logic based on auth and onboarding status
   useEffect(() => {
+    if (redirectedRef.current) return;
+
     if (status === "authenticated" && session?.user) {
       const user = session.user as any;
       const isNewUser = user.isNewUser === true;
       const onboardingCompleted = user.onboardingCompleted === true;
+      const userRoles = (user?.roles || []) as string[];
+      const isDoctorRole = userRoles.includes("doctor") || callbackUrl.startsWith("/doctor");
 
-      if (isNewUser || !onboardingCompleted) {
-        // New user or incomplete onboarding: proceed to Step 2
-        router.push("/onboarding?step=2");
+      redirectedRef.current = true;
+
+      if (isDoctorRole) {
+        // Doctor: direct to doctor practice vault or requested doctor route
+        router.replace(callbackUrl || "/doctor");
+      } else if (isNewUser || !onboardingCompleted) {
+        // Patient needing initial onboarding: proceed to Step 2
+        router.replace("/onboarding?step=2");
       } else {
-        // Old/Existing user: redirect straight to dashboard
-        router.push(callbackUrl);
+        // Existing patient: redirect straight to dashboard
+        router.replace(callbackUrl);
       }
     }
   }, [status, session, router, callbackUrl]);
@@ -150,7 +162,7 @@ function AuthContent() {
     try {
       setSigningInAsDoctor(true);
       await signIn("google", {
-        callbackUrl: "/doctor/login",
+        callbackUrl: "/doctor",
       });
     } catch (error) {
       console.error("Doctor sign in error:", error);

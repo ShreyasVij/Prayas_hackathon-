@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "motion/react";
 import { OnboardingProgressBar } from "@/components/onboarding/OnboardingProgressBar";
 import { InteractiveTiltCard } from "@/components/onboarding/InteractiveTiltCard";
@@ -588,7 +588,7 @@ function OnboardingContent() {
               >
                 <button
                   type="button"
-                  onClick={() => router.push("/auth")}
+                  onClick={() => signOut({ callbackUrl: "/auth" })}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-all"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />

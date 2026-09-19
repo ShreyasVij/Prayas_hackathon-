@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, Suspense, useState } from "react";
+import { useEffect, Suspense, useState, useRef } from "react";
 import { Stethoscope, Loader2 } from "lucide-react";
 
 function DoctorAuthBridgeContent() {
@@ -10,19 +10,27 @@ function DoctorAuthBridgeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [authorizing, setAuthorizing] = useState(false);
+  const redirectedRef = useRef(false);
 
   const callbackUrl = searchParams.get("callbackUrl") || "/doctor";
 
   useEffect(() => {
+    if (redirectedRef.current) return;
+    if (status === "loading") return;
+
     async function handleDoctorAuth() {
+      if (redirectedRef.current) return;
+
       // If unauthenticated, redirect immediately to the unified login page
       if (status === "unauthenticated") {
+        redirectedRef.current = true;
         router.replace(`/auth?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         return;
       }
 
       // If authenticated, register as doctor role and redirect to doctor vault
       if (status === "authenticated" && session?.user) {
+        redirectedRef.current = true;
         setAuthorizing(true);
         try {
           const registerRes = await fetch("/api/doctor/register", {
