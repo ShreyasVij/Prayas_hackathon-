@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const aiHandler = process.env.DOCUMENT_AI_HANDLER === "external" ? "external" : "internal";
     if (files.length > 0) {
       const parts = [] as { fileName: string; contentBase64: string }[];
       for (let i = 0; i < files.length; i++) {
@@ -35,11 +36,11 @@ export async function POST(request: NextRequest) {
         parts.push({ fileName: f.name || `page-${i + 1}`, contentBase64 });
       }
       const result = await callExtractMulti({ files: parts, ...identity });
-      return NextResponse.json(result, { status: 200 });
+      return NextResponse.json({ ...result, aiHandler }, { status: 200 });
     } else if (file) {
       const contentBase64 = await toBase64(file);
       const result = await callExtract({ fileName: file.name, contentBase64, ...identity });
-      return NextResponse.json(result, { status: 200 });
+      return NextResponse.json({ ...result, aiHandler }, { status: 200 });
     } else {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }

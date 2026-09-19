@@ -23,7 +23,11 @@ export const SUPPORTED_DISEASES = [
 
 export type SupportedDisease = (typeof SUPPORTED_DISEASES)[number];
 
-export function MedicalImageUpload() {
+interface MedicalImageUploadProps {
+  resultRedirectUrl?: string;
+}
+
+export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProps = {}) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -131,7 +135,7 @@ export function MedicalImageUpload() {
         sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
       }
 
-      router.push("/doctor/result");
+      router.push(resultRedirectUrl || "/doctor/result");
     } catch (err) {
       console.error("ML Inference error:", err);
       setErrorMessage(err instanceof Error ? err.message : "Failed to complete diagnostic analysis. Check server connectivity.");

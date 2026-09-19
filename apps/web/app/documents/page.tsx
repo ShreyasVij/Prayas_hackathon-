@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import DocumentReviewForm, { ExtractedDocument } from "@/components/DocumentReviewForm";
+import { MedicalImageUpload } from "../doctor/components/MedicalImageUpload";
+import { FileText, Activity, ArrowLeft } from "lucide-react";
 
 type Status = "idle" | "uploading" | "processing" | "review" | "error";
 
@@ -89,8 +91,25 @@ export default function DocumentsPage() {
       if (!res.ok) {
         throw new Error(data?.error || "Upload failed");
       }
+      const aiHandler = data?.aiHandler === "external" ? "external" : "internal";
       // Accept both direct object or {data: {...}} shapes
       const extracted: any = (data as any)?.data ?? (data as any) ?? null;
+      if (aiHandler === "external") {
+        const externalPreviewUrl = previewUrl;
+        const externalFileName = files.map((file) => file.name).join(", ");
+        const saved = await onConfirm(extracted || {});
+        if (!saved) return;
+        sessionStorage.setItem("externalDocumentResult", JSON.stringify({
+          fileName: externalFileName,
+          extracted,
+          analyzedAt: new Date().toISOString(),
+        }));
+        if (externalPreviewUrl) {
+          sessionStorage.setItem("externalDocumentPreviewUrl", externalPreviewUrl);
+        }
+        router.push("/documents/result");
+        return;
+      }
       // Debug: log extracted AI payload to verify units/summary presence
       try { console.debug('[AI Extract] payload', extracted); } catch {}
       setAiData(extracted);
@@ -145,10 +164,10 @@ export default function DocumentsPage() {
     return `${files.length} files • ${totalKb} KB total`;
   }, [files]);
 
-  const onConfirm = async (payload: ExtractedDocument) => {
+  const onConfirm = async (payload: ExtractedDocument): Promise<boolean> => {
     if (files.length === 0) {
       setError("No file selected to save");
-      return;
+      return false;
     }
     try {
       setStatus("processing");
@@ -176,7 +195,7 @@ export default function DocumentsPage() {
         report_date: payload.report_date,
         medications: payload.medications,
         vitals: payload.vitals,
-        raw_text: aiData?.raw_text || '',
+        raw_text: payload.raw_text || aiData?.raw_text || '',
       };
       fd.append('meta', JSON.stringify(meta));
 
@@ -197,9 +216,11 @@ export default function DocumentsPage() {
       // Refresh documents list and switch to view mode
       await refreshDocuments();
       setViewMode('view');
+      return true;
     } catch (err: any) {
       setError(err?.message || "Save failed");
       setStatus("error");
+      return false;
     }
   };
 
@@ -573,7 +594,110 @@ export default function DocumentsPage() {
           )}
         </div>
 
-        {viewMode === 'scan' && (
+        {viewMode === 'scan' && docTypeSelection === 'none' && (
+          <div className="col-12">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-10 shadow-sm">
+              <div className="text-center max-w-xl mx-auto mb-8">
+                <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 tracking-tight">
+                  What type of document is this?
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-500 mt-2 leading-relaxed">
+                  Select your document type to begin the upload and diagnostic flow.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {/* Option A: Normal Document */}
+                <button
+                  type="button"
+                  onClick={() => setDocTypeSelection('normal')}
+                  className="group text-left p-6 sm:p-7 rounded-2xl border-2 border-slate-200 hover:border-teal-500 bg-slate-50/50 hover:bg-teal-50/20 transition-all duration-200 shadow-2xs hover:shadow-md flex flex-col justify-between cursor-pointer"
+                >
+                  <div>
+                    <div className="h-12 w-12 rounded-xl bg-teal-50 text-teal-600 border border-teal-100/90 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-zinc-900 group-hover:text-teal-800">
+                      Normal Document
+                    </h3>
+                    <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                      Lab reports, prescriptions, discharge summaries, or general health records for AI text extraction &amp; vault storage.
+                    </p>
+                  </div>
+                  <div className="mt-6 text-xs font-bold text-teal-600 flex items-center gap-1 group-hover:underline">
+                    Select Normal Document &rarr;
+                  </div>
+                </button>
+
+                {/* Option B: Scan */}
+                <button
+                  type="button"
+                  onClick={() => setDocTypeSelection('scan')}
+                  className="group text-left p-6 sm:p-7 rounded-2xl border-2 border-slate-200 hover:border-teal-500 bg-slate-50/50 hover:bg-teal-50/20 transition-all duration-200 shadow-2xs hover:shadow-md flex flex-col justify-between cursor-pointer"
+                >
+                  <div>
+                    <div className="h-12 w-12 rounded-xl bg-teal-50 text-teal-600 border border-teal-100/90 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <Activity className="h-6 w-6" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-zinc-900 group-hover:text-teal-800">
+                        Scan
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-800">
+                        Medical Imaging
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                      Radiological scans, X-Rays, CT slices, MRI neuro, dermoscopy, or DICOM files for ML automated diagnostics.
+                    </p>
+                  </div>
+                  <div className="mt-6 text-xs font-bold text-teal-600 flex items-center gap-1 group-hover:underline">
+                    Select Medical Scan &rarr;
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'scan' && docTypeSelection === 'scan' && (
+          <div className="col-12 space-y-4">
+            <div className="flex items-center justify-between bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-2.5 text-xs shadow-2xs">
+              <span className="font-medium text-zinc-600">
+                Selected Type: <strong className="text-zinc-900 font-bold">Scan (Medical Imaging)</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setDocTypeSelection('none')}
+                className="inline-flex items-center gap-1.5 font-bold text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Change document type
+              </button>
+            </div>
+            <MedicalImageUpload resultRedirectUrl="/documents/scan-result" />
+          </div>
+        )}
+
+        {viewMode === 'scan' && docTypeSelection === 'normal' && (
+          <div className="col-12 mb-1">
+            <div className="flex items-center justify-between bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-2.5 text-xs shadow-2xs">
+              <span className="font-medium text-zinc-600">
+                Selected Type: <strong className="text-zinc-900 font-bold">Normal Document</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => { resetScan(); setDocTypeSelection('none'); }}
+                className="inline-flex items-center gap-1.5 font-bold text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Change document type
+              </button>
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'scan' && docTypeSelection === 'normal' && (
         <div className="col-12 col-lg-5">
           <div className="card shadow-sm h-100">
             <div className="card-body">
@@ -719,7 +843,7 @@ export default function DocumentsPage() {
         </div>
         )}
 
-        {viewMode === 'scan' && (
+        {viewMode === 'scan' && docTypeSelection === 'normal' && (
         <div className="col-12 col-lg-7">
           <div className="card h-100 shadow-sm">
             <div className="card-body">
