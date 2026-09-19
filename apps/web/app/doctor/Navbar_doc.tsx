@@ -208,7 +208,7 @@ export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor
             </DropdownMenu>
           ) : (
             <Link 
-              href="/doctor/login" 
+              href="/auth?callbackUrl=/doctor" 
               className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all"
             >
               Sign In as Doctor
@@ -261,7 +261,7 @@ export function AppNavbar({ userName = "Healthcare Provider", userRole = "doctor
                 </button>
               ) : (
                 <Link
-                  href="/doctor/login"
+                  href="/auth?callbackUrl=/doctor"
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 text-white"
                 >
