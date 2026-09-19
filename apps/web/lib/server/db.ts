@@ -1,13 +1,37 @@
 // MongoDB client bootstrap for server-side operations.
 import { MongoClient, Db, Collection } from 'mongodb';
+import { setServers } from 'node:dns';
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
+let dnsConfigured = false;
+
+function configureDnsServers() {
+  if (dnsConfigured) return;
+  const configured = process.env.NODE_DNS_SERVERS
+    ?.split(',')
+    .map((server) => server.trim())
+    .filter(Boolean);
+  if (!configured?.length) {
+    dnsConfigured = true;
+    return;
+  }
+  try {
+    setServers(configured);
+    dnsConfigured = true;
+    console.log(`Node DNS resolver configured with ${configured.length} server(s)`);
+  } catch (error) {
+    throw new Error(
+      `Invalid NODE_DNS_SERVERS configuration: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
 
 export async function getDbClient(): Promise<Db> {
   const uri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB || 'medilocker';
   if (!uri) throw new Error('MONGODB_URI is not set');
+  configureDnsServers();
 
   // If client exists but topology is closed, reset
   if (client) {

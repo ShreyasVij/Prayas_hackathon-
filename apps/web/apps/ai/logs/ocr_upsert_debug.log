@@ -42,3 +42,57 @@ Patient: Kagstro Woods
 Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
 Alex Thompson, M.D.
 Intern
+[2026-09-19T16:13:22.809Z] [POST] initialMeta: {"patient_name":"Kagstro Woods","dob":"1982-06-15","doctor_name":null,"diagnosis":null,"summary":null,"report_date":null,"medications":[],"vitals":[{"label":"Total Bilirubin","value":2.1,"unit":"mg/dL"},{"label":"White Blood Cells (WBC)","value":3.2,"unit":null},{"label":"Platelet Count","value":105,"unit":null}],"raw_text":"R2 Medical\n1234 Health St, Suite 567\nCityville, ST 12345\n(555) 123-4567\nR Medical\nMEDICAL REPORT\nPatient: Kagstro Woods\nDate of Birth: 06/15/1982 (41 years) Date: 04/24/2024\nAlex Thompson, M.D.\nInternal Medicine\nComplete Blood Count (CBC)\nTest\nWhite Blood Cells\nResult\n3.2 ths/dL\nHematocrit\n48.1 %\nMean Corpuscular\nVolume (MCV)\nPlatelet Count\n105 fL\n507 lakh/uL\nBasic Metabolic Panel (BMP)\nTest\nCalcium\nALT\nResult\n8.1 mg/dL\n68 U/L\nTotal Bilirubin\nChloride\nBicarbonate\n2.1 mg/dL\n110 mmo//L\n18 mmo//L\nFlag\nLow\nHigh\nHigh\nHigh\nFlag\nLow\nHigh\nHigh\nHigh\nLow\n(555) 123-4567\nReference Range\n4.0 - 11.0 thousand/ul\n37 - 47% (females)\n80 - 100 fL\n150-450 lskh/uL\nReference Range\n8.5 - 10.2 mg/dL\n7 - 56 UrL\n0.1 - 1.2 mg/dL\n98 - 107 mmol/L\n22 - 29 mmol/L"}
+[2026-09-19T16:13:22.810Z] [POST] initialMeta.raw_text: R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern
+[2026-09-19T16:14:34.787Z] [POST] initialMeta: {"patient_name":"Kagstro Woods","dob":"1982-06-15","doctor_name":null,"diagnosis":null,"summary":null,"report_date":null,"medications":[],"vitals":[{"label":"Total Bilirubin","value":2.1,"unit":"mg/dL"},{"label":"White Blood Cells (WBC)","value":3.2,"unit":null},{"label":"Platelet Count","value":105,"unit":null}],"raw_text":"R2 Medical\n1234 Health St, Suite 567\nCityville, ST 12345\n(555) 123-4567\nR Medical\nMEDICAL REPORT\nPatient: Kagstro Woods\nDate of Birth: 06/15/1982 (41 years) Date: 04/24/2024\nAlex Thompson, M.D.\nInternal Medicine\nComplete Blood Count (CBC)\nTest\nWhite Blood Cells\nResult\n3.2 ths/dL\nHematocrit\n48.1 %\nMean Corpuscular\nVolume (MCV)\nPlatelet Count\n105 fL\n507 lakh/uL\nBasic Metabolic Panel (BMP)\nTest\nCalcium\nALT\nResult\n8.1 mg/dL\n68 U/L\nTotal Bilirubin\nChloride\nBicarbonate\n2.1 mg/dL\n110 mmo//L\n18 mmo//L\nFlag\nLow\nHigh\nHigh\nHigh\nFlag\nLow\nHigh\nHigh\nHigh\nLow\n(555) 123-4567\nReference Range\n4.0 - 11.0 thousand/ul\n37 - 47% (females)\n80 - 100 fL\n150-450 lskh/uL\nReference Range\n8.5 - 10.2 mg/dL\n7 - 56 UrL\n0.1 - 1.2 mg/dL\n98 - 107 mmol/L\n22 - 29 mmol/L"}
+[2026-09-19T16:14:34.788Z] [POST] initialMeta.raw_text: R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern
+[2026-09-19T16:17:34.892Z] [POST] initialMeta: {"patient_name":"Kagstro Woods","dob":"1982-06-15","doctor_name":null,"diagnosis":null,"summary":null,"report_date":null,"medications":[],"vitals":[{"label":"Total Bilirubin","value":2.1,"unit":"mg/dL"},{"label":"White Blood Cells (WBC)","value":3.2,"unit":null},{"label":"Platelet Count","value":105,"unit":null}],"raw_text":"R2 Medical\n1234 Health St, Suite 567\nCityville, ST 12345\n(555) 123-4567\nR Medical\nMEDICAL REPORT\nPatient: Kagstro Woods\nDate of Birth: 06/15/1982 (41 years) Date: 04/24/2024\nAlex Thompson, M.D.\nInternal Medicine\nComplete Blood Count (CBC)\nTest\nWhite Blood Cells\nResult\n3.2 ths/dL\nHematocrit\n48.1 %\nMean Corpuscular\nVolume (MCV)\nPlatelet Count\n105 fL\n507 lakh/uL\nBasic Metabolic Panel (BMP)\nTest\nCalcium\nALT\nResult\n8.1 mg/dL\n68 U/L\nTotal Bilirubin\nChloride\nBicarbonate\n2.1 mg/dL\n110 mmo//L\n18 mmo//L\nFlag\nLow\nHigh\nHigh\nHigh\nFlag\nLow\nHigh\nHigh\nHigh\nLow\n(555) 123-4567\nReference Range\n4.0 - 11.0 thousand/ul\n37 - 47% (females)\n80 - 100 fL\n150-450 lskh/uL\nReference Range\n8.5 - 10.2 mg/dL\n7 - 56 UrL\n0.1 - 1.2 mg/dL\n98 - 107 mmol/L\n22 - 29 mmol/L"}
+[2026-09-19T16:17:34.893Z] [POST] initialMeta.raw_text: R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern
+[2026-09-19T16:19:53.723Z] [POST] initialMeta: {"patient_name":"Kagstro Woods","dob":"1982-06-15","doctor_name":null,"diagnosis":null,"summary":null,"report_date":null,"medications":[],"vitals":[{"label":"Total Bilirubin","value":2.1,"unit":"mg/dL"},{"label":"White Blood Cells (WBC)","value":3.2,"unit":null},{"label":"Platelet Count","value":105,"unit":null}],"raw_text":"R2 Medical\n1234 Health St, Suite 567\nCityville, ST 12345\n(555) 123-4567\nR Medical\nMEDICAL REPORT\nPatient: Kagstro Woods\nDate of Birth: 06/15/1982 (41 years) Date: 04/24/2024\nAlex Thompson, M.D.\nInternal Medicine\nComplete Blood Count (CBC)\nTest\nWhite Blood Cells\nResult\n3.2 ths/dL\nHematocrit\n48.1 %\nMean Corpuscular\nVolume (MCV)\nPlatelet Count\n105 fL\n507 lakh/uL\nBasic Metabolic Panel (BMP)\nTest\nCalcium\nALT\nResult\n8.1 mg/dL\n68 U/L\nTotal Bilirubin\nChloride\nBicarbonate\n2.1 mg/dL\n110 mmo//L\n18 mmo//L\nFlag\nLow\nHigh\nHigh\nHigh\nFlag\nLow\nHigh\nHigh\nHigh\nLow\n(555) 123-4567\nReference Range\n4.0 - 11.0 thousand/ul\n37 - 47% (females)\n80 - 100 fL\n150-450 lskh/uL\nReference Range\n8.5 - 10.2 mg/dL\n7 - 56 UrL\n0.1 - 1.2 mg/dL\n98 - 107 mmol/L\n22 - 29 mmol/L"}
+[2026-09-19T16:19:53.724Z] [POST] initialMeta.raw_text: R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern
+[2026-09-19T16:20:37.201Z] [POST] Upserting OCR output: id=33642372-6ac1-47b6-bc66-c66bed85ed9c:v1, text=R2 Medical
+1234 Health St, Suite 567
+Cityville, ST 12345
+(555) 123-4567
+R Medical
+MEDICAL REPORT
+Patient: Kagstro Woods
+Date of Birth: 06/15/1982 (41 years) Date: 04/24/2024
+Alex Thompson, M.D.
+Intern

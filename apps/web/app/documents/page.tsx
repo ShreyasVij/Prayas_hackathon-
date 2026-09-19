@@ -34,6 +34,7 @@ export default function DocumentsPage() {
   const [viewerUrls, setViewerUrls] = useState<string[] | null>(null);
   const [viewerDoc, setViewerDoc] = useState<any | null>(null);
   const [viewerAnalysis, setViewerAnalysis] = useState<any | null>(null);
+  const [viewerError, setViewerError] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [menuDocId, setMenuDocId] = useState<string | null>(null);
   const [overlayRect, setOverlayRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
@@ -322,6 +323,7 @@ export default function DocumentsPage() {
 
   async function openViewerByStorageKey(storageKey: string, mimeType?: string) {
     try {
+      if (!storageKey) throw new Error("This document has no storage key");
       const res = await fetch(`/api/documents/download?storageKey=${encodeURIComponent(storageKey)}`);
       const ct = res.headers.get('content-type') || '';
       const data = ct.includes('application/json') ? await res.json().catch(()=>({})) : { error: await res.text().catch(()=>"") };
@@ -329,15 +331,22 @@ export default function DocumentsPage() {
       const urls = Array.isArray((data as any)?.urls) ? (data as any).urls : null;
       setViewerUrls(urls);
       setViewerUrl(data?.url || (urls && urls[0]) || null);
-      setViewerOpen(true);
+      if (!data?.url && (!urls || urls.length === 0)) {
+        throw new Error("The document file could not be opened");
+      }
     } catch (e:any) {
-      setError(e?.message || 'Failed to open viewer');
+      setViewerError(e?.message || 'Failed to open document file');
+    } finally {
+      setViewerOpen(true);
     }
   }
 
   async function openViewer(doc: any) {
     setViewerDoc(doc);
     setViewerAnalysis(null);
+    setViewerError("");
+    setViewerUrl(null);
+    setViewerUrls(null);
     await openViewerByStorageKey(doc.storageKey, doc.mimeType);
     // Fetch analysis details (observations, ocr meta)
     try {
@@ -857,7 +866,7 @@ export default function DocumentsPage() {
         </div>
         )}
 
-        {viewerOpen && viewerUrl && viewerDoc && (
+        {viewerOpen && viewerDoc && (
           <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
             <div className="bg-white rounded shadow" style={{ width: '95%', height: '92%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
               {/* Header bar to avoid overlay conflicts */}
@@ -867,7 +876,12 @@ export default function DocumentsPage() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'row', gap: 0, minHeight: 0 }}>
                 {/* Left: document */}
                 <div style={{ width: '60%', height: '100%', minHeight: 0, display: 'flex', alignItems: 'stretch', justifyContent: 'stretch', overflowY: 'auto', overflowX: 'hidden', padding: 0, margin: 0, boxSizing: 'border-box', overscrollBehavior: 'contain', scrollbarGutter: 'stable' as any }}>
-                  {viewerUrls && viewerUrls.length > 1 ? (
+                  {viewerError ? (
+                    <div className="alert alert-warning m-3">
+                      <div className="fw-semibold">Document preview unavailable</div>
+                      <div className="small">{viewerError}</div>
+                    </div>
+                  ) : viewerUrls && viewerUrls.length > 1 ? (
                     <div style={{ width: '100%' }}>
                       {viewerUrls.map((u, idx) => (
                         <div key={u+idx} className="mb-2">
@@ -1007,9 +1021,13 @@ export default function DocumentsPage() {
                                   // Also refresh the documents list so that reopening the viewer
                                   // always uses the latest persisted summary from the backend.
                                   await refreshDocuments('active');
+                                } else {
+                                  const data = await res.json().catch(() => ({}));
+                                  setError(data?.error || 'Summary generation failed');
                                 }
                               } catch (e) {
                                 console.error('Summary generation failed:', e);
+                                setError(e instanceof Error ? e.message : 'Summary generation failed');
                               } finally {
                                 setSummaryLoading(false);
                               }

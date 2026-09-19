@@ -15,11 +15,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing documentId or structured' }, { status: 400 });
     }
 
-    const summary = await callSummarize({ structuredData: structured }).catch((e: any) => {
-      return { error: e?.message || 'Summarization failed' };
-    });
-    if ((summary as any)?.error) {
-      return NextResponse.json(summary, { status: 500 });
+    const documentsCol = await getCollection<any>('documents');
+    const document = await documentsCol.findOne({ id: documentId });
+    const ocrId = document?.versionId ? `${documentId}:${document.versionId}` : null;
+    const ocr = ocrId ? await getCollection<any>('ocrOutputs').then((col) => col.findOne({ id: ocrId })) : null;
+    const structuredData = {
+      ...(structured || {}),
+      ...(ocr?.text && !structured?.raw_text ? { raw_text: ocr.text } : {}),
+    };
+    let summary;
+    try {
+      summary = await callSummarize({ structuredData });
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: error?.message || 'Summarization failed' },
+        { status: 502 },
+      );
     }
 
     // Expect an object: { summary: { ...structured... } }
