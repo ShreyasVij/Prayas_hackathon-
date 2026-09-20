@@ -92,7 +92,7 @@ export function AppNavbar({ userName, userRole = "doctor" }: AppNavbarProps) {
             <div className="p-1.5 rounded-xl bg-teal-50 border border-teal-200/80 group-hover:border-teal-400 transition-colors">
               <Image 
                 src="/logo.jpg" 
-                alt="MediLocker Logo" 
+                alt="Medora Logo" 
                 width={32} 
                 height={32} 
                 className="rounded-lg object-contain" 
@@ -100,7 +100,7 @@ export function AppNavbar({ userName, userRole = "doctor" }: AppNavbarProps) {
             </div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-lg text-zinc-900 tracking-tight">
-                Medi<span className="text-teal-600">Locker</span>
+                Medora
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200">
                 <Stethoscope className="h-3 w-3" />
@@ -276,4 +276,4 @@ export function AppNavbar({ userName, userRole = "doctor" }: AppNavbarProps) {
       )}
     </>
   );
-}
+}
