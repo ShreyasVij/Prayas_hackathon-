@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 export const SUPPORTED_DISEASES = [
   "pneumonia", "covid19", "tuberculosis", "lung_cancer", "melanoma",
   "diabetic_retinopathy", "glaucoma", "brain_tumor", "alzheimers",
-  "breast_cancer", "leukemia", "arrhythmia",
+  "breast_cancer", "leukemia", "arrhythmia","heart_murmur"
 ] as const;
 
 export type SupportedDisease = (typeof SUPPORTED_DISEASES)[number];

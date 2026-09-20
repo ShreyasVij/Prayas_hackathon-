@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const SUPPORTED_DISEASES = new Set([
   "pneumonia", "covid19", "tuberculosis", "lung_cancer", "melanoma",
   "diabetic_retinopathy", "glaucoma", "brain_tumor", "alzheimers",
-  "breast_cancer", "leukemia", "arrhythmia",
+  "breast_cancer", "leukemia", "arrhythmia","heart_murmur"
 ]);
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
