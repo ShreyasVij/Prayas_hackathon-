@@ -10,12 +10,20 @@ import { ShieldAlert, ArrowRight, User } from "lucide-react";
 function getInitials(name?: string | null, email?: string | null) {
   const source = name || email || "";
   const parts = source.split(/\s+/).filter(Boolean);
+
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function Navbar({ userName, userRole }: { userName?: string, userRole?: string }) {
+export default function Navbar({
+  userName,
+  userRole,
+}: {
+  userName?: string;
+  userRole?: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -24,12 +32,29 @@ export default function Navbar({ userName, userRole }: { userName?: string, user
   const initials = getInitials(userName);
 
   const role = userRole as string | undefined;
+
   const links = [
-    { href: "/dashboard", label: "Dashboard", show: true },
-    { href: "/documents", label: "Documents", show: true },
-    { href: "/family", label: "Family Vault", show: true },
-    { href: "/doctor", label: "Clinical Portal", show: role === "doctor" || role === "admin" },
-  ].filter(l => l.show);
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      show: true,
+    },
+    {
+      href: "/documents",
+      label: "Documents",
+      show: true,
+    },
+    {
+      href: "/family",
+      label: "Family Vault",
+      show: true,
+    },
+    {
+      href: "/doctor",
+      label: "Clinical Portal",
+      show: role === "doctor" || role === "admin",
+    },
+  ].filter((l) => l.show);
 
   if (pathname?.startsWith("/emergency")) return null;
 
@@ -37,20 +62,20 @@ export default function Navbar({ userName, userRole }: { userName?: string, user
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          
           {/* Brand */}
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="p-1.5 rounded-xl bg-teal-50 border border-teal-200/80 group-hover:border-teal-400 transition-colors">
               <Image
                 src="/logo.jpg"
-                alt="MediLocker Logo"
+                alt="Medora Logo"
                 width={32}
                 height={32}
                 className="rounded-lg object-contain"
               />
             </div>
+
             <span className="font-extrabold text-lg text-zinc-900 tracking-tight">
-              Medi<span className="text-teal-600">Locker</span>
+              Med<span className="text-teal-600">ora</span>
             </span>
           </Link>
 
@@ -58,6 +83,7 @@ export default function Navbar({ userName, userRole }: { userName?: string, user
           <div className="hidden md:flex items-center gap-1">
             {links.map((link) => {
               const active = pathname?.startsWith(link.href);
+
               return (
                 <Link
                   key={link.href}
@@ -101,6 +127,7 @@ export default function Navbar({ userName, userRole }: { userName?: string, user
                 >
                   {initials}
                 </Link>
+
                 <button
                   onClick={async () => {
                     await supabase.auth.signOut();
@@ -113,7 +140,6 @@ export default function Navbar({ userName, userRole }: { userName?: string, user
               </div>
             )}
           </div>
-
         </div>
       </div>
     </nav>

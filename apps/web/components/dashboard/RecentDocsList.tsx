@@ -30,21 +30,37 @@ const STATUS_LABELS = {
 function formatDate(dateStr?: string) {
   if (!dateStr) return "";
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  } catch { return ""; }
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
 }
 
+/**
+ * RecentDocsList — recent-documents panel for the Bento Box.
+ * Combines latest Supabase AI scans and MongoDB medical documents.
+ */
 export function RecentDocsList() {
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchDocs() {
+      setLoading(true);
+      setError(null);
       const results: DocItem[] = [];
 
       // 1. Fetch Supabase-backed medical scans (AI diagnostics)
       try {
-        const res = await fetch("/api/patient/diagnostics");
+        const res = await fetch("/api/patient/diagnostics", {
+          method: "GET",
+          cache: "no-store",
+        });
         if (res.ok) {
           const data = await res.json();
           const records: any[] = data?.records || [];
@@ -69,14 +85,19 @@ export function RecentDocsList() {
             });
           }
         }
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal fallback */
+      }
 
       // 2. Fetch MongoDB documents (uploaded PDFs / reports)
       try {
-        const res = await fetch("/api/documents?status=active&limit=5");
+        const res = await fetch("/api/documents?status=active&limit=5", {
+          method: "GET",
+          cache: "no-store",
+        });
         if (res.ok) {
           const data = await res.json();
-          const list: any[] = data?.data || [];
+          const list: any[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
           for (const doc of list.slice(0, 5)) {
             const hasSummary =
               (typeof doc.summary === "string" && doc.summary.trim().length > 0) ||
@@ -87,7 +108,7 @@ export function RecentDocsList() {
               rawStatus === "flagged" || rawStatus === "review" ? "flagged" :
               rawStatus === "error" || rawStatus === "failed" ? "error" : "pending";
             results.push({
-              id: doc.id || doc._id,
+              id: doc.id || doc._id || Math.random().toString(),
               name: doc.originalName || doc.fileName || "Untitled Document",
               date: doc.createdAt || doc.uploadedAt,
               status,
@@ -96,14 +117,23 @@ export function RecentDocsList() {
             });
           }
         }
-      } catch { /* non-fatal */ }
+      } catch (err) {
+        console.error("[RecentDocsList] Error loading docs:", err);
+      }
+
+      if (cancelled) return;
 
       // Sort by date desc, take 5
       results.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       setDocs(results.slice(0, 5));
       setLoading(false);
     }
+
     fetchDocs();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -119,13 +149,26 @@ export function RecentDocsList() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
+        <FileText className="h-8 w-8 text-slate-300" strokeWidth={1.5} />
+        <p className="text-sm text-muted-foreground">Could not load documents.</p>
+        <Link href="/documents" className="text-xs text-teal-600 hover:text-teal-700 font-medium no-underline">
+          Go to Documents →
+        </Link>
+      </div>
+    );
+  }
+
   if (docs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
         <FileText className="h-8 w-8 text-slate-300" strokeWidth={1.5} />
-        <p className="text-sm text-muted-foreground">
-          No records yet. Upload your first medical record to get started.
-        </p>
+        <div>
+          <p className="text-sm font-medium text-zinc-700">No recent uploads</p>
+          <p className="mt-1 text-xs text-muted-foreground">Your uploaded medical documents and scans will appear here.</p>
+        </div>
         <Link href="/documents" className="text-xs text-teal-600 hover:text-teal-700 font-medium no-underline">
           Go to Documents →
         </Link>

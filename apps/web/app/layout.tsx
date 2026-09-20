@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { createClient } from "@/utils/supabase/server";
 
 export const metadata = {
-  title: 'MEDILOCKER',
+  title: 'Medora',
   description: 'Web app',
 };
 
