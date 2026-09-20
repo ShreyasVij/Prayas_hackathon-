@@ -114,7 +114,8 @@ export async function GET(
     try {
       const children = await listFiles({ prefix: doc.storageKey });
       if (children && children.length > 0) {
-        downloadUrls = await createDownloadUrlsForPrefix({ prefix: doc.storageKey, expiresIn: 900 });
+        const urlsRecord = await createDownloadUrlsForPrefix({ prefix: doc.storageKey, expiresIn: 900 });
+        downloadUrls = Object.values(urlsRecord);
       }
     } catch {}
   }

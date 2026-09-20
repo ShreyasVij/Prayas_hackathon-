@@ -6,9 +6,9 @@ const AI_BACKEND_URL = process.env.AI_BACKEND_URL || "https://mock-ai-backend.co
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!authUser) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -32,7 +32,7 @@ function normalizeGender(g: string | undefined | null): UserProfile["gender"] | 
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     const email = user?.email || (DRY_RUN ? "alex.johnson@example.com" : null);
 
     if (!email) {
@@ -113,7 +113,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     const email = user?.email || (DRY_RUN ? "alex.johnson@example.com" : null);
 
     if (!email) {

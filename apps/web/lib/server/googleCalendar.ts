@@ -5,12 +5,12 @@ export function createOAuth2Client(tokens?: any): any {
   };
 }
 
-export async function createCalendarEvent(oauth2Client: any, details: any): Promise<any> {
-  return { id: `event_${Date.now()}`, ...details };
+export async function createCalendarEvent(...args: any[]): Promise<any> {
+  return `event_${Date.now()}`;
 }
 
-export async function deleteCalendarEvent(oauth2Client: any, eventId: string): Promise<any> {
-  return { success: true, eventId };
+export async function deleteCalendarEvent(...args: any[]): Promise<any> {
+  return { success: true };
 }
 
 export async function refreshTokensIfNeeded(tokens: any): Promise<any> {

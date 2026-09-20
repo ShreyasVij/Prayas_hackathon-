@@ -1,42 +1,77 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
+import { getAllowedDiseasesForSpecialty } from "../records/route";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://dummy.supabase.co";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy-key";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key";
 const supabaseAdmin = createServiceRoleClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user is a doctor
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, data")
       .eq("id", authUser.id)
       .single();
 
-    if (profile?.role !== "doctor") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { data: doctor } = await supabaseAdmin
+      .from("doctors")
+      .select("specialty, verified")
+      .eq("id", authUser.id)
+      .single();
+
+    const isDoctor = profile?.role === "doctor" || !!doctor;
+    if (!isDoctor) {
+      return NextResponse.json({ error: "Forbidden: Doctor role required" }, { status: 403 });
     }
 
-    // Since doctor id is in profiles, and doctors table shares the same id:
-    const doctorId = authUser.id;
-
     const body = await req.json();
-    const { recordId, doctorReview, isAccurate } = body;
+    const { recordId, doctorReview, isAccurate, specialty } = body;
 
     if (!recordId) {
       return NextResponse.json({ error: "Record ID is required" }, { status: 400 });
     }
 
-    // Update the record
-    const { data, error } = await supabase
+    const doctorId = authUser.id;
+    const activeSpecialty = specialty || doctor?.specialty || (profile?.data as any)?.specialty || (profile?.data as any)?.specialization || "Pulmonology";
+    const allowedDiseases = getAllowedDiseasesForSpecialty(activeSpecialty);
+
+    // Ensure doctor entry in public.doctors table so foreign keys are satisfied
+    await supabaseAdmin.from("doctors").upsert({
+      id: authUser.id,
+      specialty: activeSpecialty,
+      verified: true,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+
+    // Fetch the target record to verify specialization
+    const { data: targetRecord, error: fetchErr } = await supabaseAdmin
+      .from("medical_records")
+      .select("id, disease_id, status")
+      .eq("id", recordId)
+      .single();
+
+    if (fetchErr || !targetRecord) {
+      return NextResponse.json({ error: "Medical record not found" }, { status: 404 });
+    }
+
+    // Check specialization permission
+    if (allowedDiseases.length > 0 && !allowedDiseases.includes(targetRecord.disease_id)) {
+      return NextResponse.json({ 
+        error: `Only specialists in this field can review ${targetRecord.disease_id} scans. Your recorded specialty is: ${activeSpecialty || "unmatched"}` 
+      }, { status: 403 });
+    }
+
+    // Update the record to reviewed
+    const { data, error } = await supabaseAdmin
       .from("medical_records")
       .update({
         status: "reviewed",
@@ -46,7 +81,10 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString()
       })
       .eq("id", recordId)
-      .select()
+      .select(`
+        *,
+        doctor:doctor_id(id, specialty)
+      `)
       .single();
 
     if (error) {

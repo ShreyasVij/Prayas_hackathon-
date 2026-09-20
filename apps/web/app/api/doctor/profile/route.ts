@@ -172,7 +172,7 @@ export async function POST(req: Request) {
         {
           $set: {
             profile,
-            name: authUser.name || existing.name,
+            name: (authUser.user_metadata?.name || authUser.user_metadata?.fullName || existing.name),
             status: "active",
             updatedAt: new Date(),
           },
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
         doctorCode: normalizedCode, // CRITICAL: Store normalized code (no hyphens)
         userId: user._id,
         email: authUser.email,
-        name: authUser.name || "",
+        name: (authUser.user_metadata?.name || authUser.user_metadata?.fullName || ""),
         profile,
         role: "Doctor",
         status: "active",

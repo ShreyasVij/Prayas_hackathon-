@@ -108,15 +108,12 @@ export async function saveProfileJsonToSupabase(
 
     // Try to sync to Supabase database table 'profiles' if configured
     try {
-      await client.from("profiles").upsert(
+      await client.from("profiles").update(
         {
-          email: email.toLowerCase(),
-          profile_data: profileData,
-          onboarding_completed: profileData.onboarding.completed,
+          data: profileData,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "email" }
-      );
+        }
+      ).eq("email", email.toLowerCase());
     } catch {
       // Table might not exist; safe to ignore
     }

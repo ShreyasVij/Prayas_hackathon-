@@ -123,8 +123,29 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
         throw new Error(payload?.detail || payload?.error || `Prediction failed (${response.status}).`);
       }
 
+      setProgressPercent(85);
+      setAnalysisStep("Storing scan to medical vault and queueing doctor review...");
+
+      // Persist scan file and AI prediction into medical_records table and Supabase storage
+      try {
+        const persistData = new FormData();
+        persistData.append("disease_id", diseaseId);
+        persistData.append("file", selectedFile);
+        persistData.append("ai_prediction", JSON.stringify(payload));
+        const persistRes = await fetch("/api/patient/diagnostics", {
+          method: "POST",
+          body: persistData,
+        });
+        const persistPayload = await persistRes.json().catch(() => null);
+        if (persistPayload?.record?.id) {
+          sessionStorage.setItem("currentRecordId", persistPayload.record.id);
+        }
+      } catch (saveErr) {
+        console.warn("Medical record persistence warning:", saveErr);
+      }
+
       setProgressPercent(100);
-      setAnalysisStep("Prediction complete.");
+      setAnalysisStep("Analysis complete.");
       sessionStorage.setItem("diagnosticResult", JSON.stringify({
         diseaseId,
         response: payload,

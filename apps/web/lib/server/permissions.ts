@@ -21,7 +21,7 @@ async function hasActiveShare(params: { profileId: string; actorId: string; perm
   return false;
 }
 
-export async function canAccessProfile(params: { role: Role; profileId: string; actorId: string }) {
+export async function canAccessProfile(params: { role: Role | string; profileId: string; actorId: string }) {
   if (params.role === 'admin') return true;
   const profilesCol = await getCollection<ProfileDocument>('profiles');
   const profile = await profilesCol.findOne({ id: params.profileId });
@@ -36,8 +36,8 @@ export function canPerformEmergencyAccess(params: { token: string }) {
   return params.token === 'emergency-demo-token';
 }
 
-export async function canUploadDocument(params: { role: Role; profileId: string; actorId: string }) {
-  if (!hasPermission(params.role, 'document:upload')) return false;
+export async function canUploadDocument(params: { role: Role | string; profileId: string; actorId: string }) {
+  if (!hasPermission(params.role as Role, 'document:upload')) return false;
   if (params.role === 'admin') return true;
   if (params.role === 'patient') {
     const profilesCol = await getCollection<ProfileDocument>('profiles');
@@ -55,8 +55,8 @@ export async function canUploadDocument(params: { role: Role; profileId: string;
   return false;
 }
 
-export async function canDeleteDocument(params: { role: Role; docId: string; actorId: string }) {
-  if (!hasPermission(params.role, 'document:delete')) return false;
+export async function canDeleteDocument(params: { role: Role | string; docId: string; actorId: string }) {
+  if (!hasPermission(params.role as Role, 'document:delete')) return false;
   if (params.role === 'admin') return true;
   const docsCol = await getCollection<DocumentDocument>('documents');
   const doc = await docsCol.findOne({ id: params.docId });
@@ -64,8 +64,8 @@ export async function canDeleteDocument(params: { role: Role; docId: string; act
   return doc.ownerUserId === params.actorId;
 }
 
-export async function canDownloadDocument(params: { role: Role; docId: string | null; profileId?: string; actorId: string }) {
-  if (!hasPermission(params.role, 'document:read')) return false;
+export async function canDownloadDocument(params: { role: Role | string; docId: string | null; profileId?: string; actorId: string }) {
+  if (!hasPermission(params.role as Role, 'document:read')) return false;
   if (params.role === 'admin') return true;
   if (params.docId) {
     const docsCol = await getCollection<DocumentDocument>('documents');

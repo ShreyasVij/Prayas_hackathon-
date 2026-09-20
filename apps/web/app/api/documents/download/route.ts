@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       // Fall back to listing page files within this storageKey prefix
       const children = await listFiles({ prefix: storageKey });
       if (children && children.length > 0) {
-        urls = await createDownloadUrlsForPrefix({ prefix: storageKey, expiresIn: expires });
+        const urlsRecord = await createDownloadUrlsForPrefix({ prefix: storageKey, expiresIn: expires });
+        urls = Object.values(urlsRecord);
       }
     }
     await logAudit(request, {

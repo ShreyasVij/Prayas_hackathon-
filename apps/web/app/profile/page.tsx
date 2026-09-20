@@ -971,7 +971,7 @@ export default function ProfilePage() {
                   className="w-full sm:w-auto px-8 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm shadow-md hover:shadow-teal-600/20 flex items-center justify-center gap-2 transition-all"
                 >
                   <Save className="h-4 w-4" />
-                  <span>{saving ? "Saving to Supabase & MongoDB..." : "Save Profile & Update Supabase JSON"}</span>
+                  <span>{saving ? "Saving..." : "Save Profile"}</span>
                 </button>
               </div>
             </div>

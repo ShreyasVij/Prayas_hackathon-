@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { Buffer } from "buffer";
-import { authOptions } from "@/lib/server/authOptions";
+import { createClient } from "@/utils/supabase/server";
 import { getCollection } from "@/lib/server/db";
 import { processAndStoreVitals, regenerateHealthSummary } from "@/lib/server/vitalsProcessor";
 import { callExtract } from "@/service/aiClient";
@@ -196,8 +195,9 @@ export async function POST(request: NextRequest) {
             });
             
             console.log('[REPROCESS] AI response keys', { documentId: docData.id, keys: extractRes ? Object.keys(extractRes) : [] });
-            ocrText = extractRes?.data?.raw_text || extractRes?.raw_text || extractRes?.text || extractRes?.ocr_text || '';
-            console.log('[REPROCESS] Extraction complete', { documentId: docData.id, textLength: ocrText.length, hasRawText: !!extractRes?.data?.raw_text });
+            const anyRes: any = extractRes;
+            ocrText = anyRes?.data?.raw_text || anyRes?.raw_text || anyRes?.text || anyRes?.ocr_text || '';
+            console.log('[REPROCESS] Extraction complete', { documentId: docData.id, textLength: ocrText.length, hasRawText: !!anyRes?.data?.raw_text });
             
             // Store OCR text
             await ocrCol.updateOne(

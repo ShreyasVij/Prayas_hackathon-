@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/server/db';
-import type { DocumentDocument } from '@/../../packages/db/documents';
-import type { DocumentVersionDocument } from '@/../../packages/db/documentVersions';
-import type { ClassificationDocument } from '@/../../packages/db/classification';
-import type { SummaryDocument } from '@/../../packages/db/summaries';
-import type { OcrOutputDocument } from '@/../../packages/db/ocrOutputs';
+import type { 
+  DocumentDocument, 
+  DocumentVersionDocument, 
+  ClassificationDocument, 
+  SummaryDocument, 
+  OcrOutputDocument 
+} from '@/../../packages/db/index';
 import { getIdentity } from '@/lib/server/auth';
 import { regenerateHealthSummary } from '@/lib/server/vitalsProcessor';
 import { canDeleteDocument } from '@/lib/server/permissions';

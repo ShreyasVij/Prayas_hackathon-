@@ -280,7 +280,7 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    const activeTokens = await getActiveTokensForProfile(profileObjectId);
+    const activeTokens = await getActiveTokensForProfile(profileObjectId.toString());
     
     // Return sanitized tokens (no hash)
     const sanitizedTokens = activeTokens.map(t => ({

@@ -55,6 +55,7 @@ export default function DocumentsPage() {
   const [filterDocType, setFilterDocType] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
+  const [docTypeSelection, setDocTypeSelection] = useState<'none' | 'normal' | 'scan'>('none');
 
   useEffect(() => {
     const current = files[previewIndex] || null;
@@ -237,7 +238,10 @@ export default function DocumentsPage() {
     } finally { setIsRefreshing(false); }
   }
 
-  useEffect(() => { refreshDocuments('active'); }, []);
+  useEffect(() => { 
+    refreshDocuments('active'); 
+    refreshDiagnostics();
+  }, []);
 
   async function refreshDiagnostics() {
     try {
@@ -466,13 +470,33 @@ export default function DocumentsPage() {
           </button>
           <button
             className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              viewMode === 'scan'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+            onClick={() => setViewMode('scan')}
+          >
+            Scan &amp; Upload
+          </button>
+          <button
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
               viewMode === 'view'
                 ? 'bg-teal-600 text-white shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
             }`}
             onClick={() => { setViewMode('view'); refreshDocuments('active'); }}
           >
-            Scanned Records ({documents.length})
+            Blood Reports &amp; Records ({documents.length})
+          </button>
+          <button
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              viewMode === 'diagnostics'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+            onClick={() => { setViewMode('diagnostics'); refreshDiagnostics(); }}
+          >
+            Disease Models &amp; Scans ({diagnostics.length})
           </button>
           <button
             className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
@@ -483,16 +507,6 @@ export default function DocumentsPage() {
             onClick={() => { setViewMode('bin'); refreshDocuments('archived'); }}
           >
             Bin
-          </button>
-          <button
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              viewMode === 'diagnostics'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-zinc-600 hover:text-zinc-900'
-            }`}
-            onClick={() => { setViewMode('diagnostics'); refreshDiagnostics(); }}
-          >
-            Diagnostics
           </button>
         </div>
       </header>
@@ -607,7 +621,7 @@ export default function DocumentsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                {/* Option A: Normal Document */}
+                {/* Option A: Blood Report / Normal Document */}
                 <button
                   type="button"
                   onClick={() => setDocTypeSelection('normal')}
@@ -617,19 +631,24 @@ export default function DocumentsPage() {
                     <div className="h-12 w-12 rounded-xl bg-teal-50 text-teal-600 border border-teal-100/90 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <FileText className="h-6 w-6" />
                     </div>
-                    <h3 className="text-base font-bold text-zinc-900 group-hover:text-teal-800">
-                      Normal Document
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-zinc-900 group-hover:text-teal-800">
+                        Blood Reports &amp; Records
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
+                        Direct Vault
+                      </span>
+                    </div>
                     <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                      Lab reports, prescriptions, discharge summaries, or general health records for AI text extraction &amp; vault storage.
+                      Blood tests (CBC, Lipid, Metabolic), general lab reports, prescriptions, or discharge summaries. Processed with OCR text extraction and saved directly to your vault (no doctor review needed).
                     </p>
                   </div>
                   <div className="mt-6 text-xs font-bold text-teal-600 flex items-center gap-1 group-hover:underline">
-                    Select Normal Document &rarr;
+                    Upload Blood Report / Document &rarr;
                   </div>
                 </button>
 
-                {/* Option B: Scan */}
+                {/* Option B: Disease Model / Scan */}
                 <button
                   type="button"
                   onClick={() => setDocTypeSelection('scan')}
@@ -641,18 +660,18 @@ export default function DocumentsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-bold text-zinc-900 group-hover:text-teal-800">
-                        Scan
+                        Disease Models &amp; Scans
                       </h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-800">
-                        Medical Imaging
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                        Doctor Review
                       </span>
                     </div>
                     <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                      Radiological scans, X-Rays, CT slices, MRI neuro, dermoscopy, or DICOM files for ML automated diagnostics.
+                      Chest X-Rays (Pneumonia, TB, COVID-19), Brain MRI, Dermoscopy (Melanoma), Mammography. Evaluated by AI disease models and submitted for review by a specialist doctor.
                     </p>
                   </div>
                   <div className="mt-6 text-xs font-bold text-teal-600 flex items-center gap-1 group-hover:underline">
-                    Select Medical Scan &rarr;
+                    Select Disease Model Scan &rarr;
                   </div>
                 </button>
               </div>
@@ -929,63 +948,177 @@ export default function DocumentsPage() {
         )}
 
         {viewMode === 'diagnostics' && (
-        <div className="col-12">
-          <div className="border rounded p-3 bg-white shadow-sm">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h2 className="h6 m-0">Diagnostic Verification Log</h2>
-              <button className="btn btn-sm btn-outline-secondary" onClick={()=>refreshDiagnostics()} disabled={isRefreshing}>
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-            <div className="table-responsive">
-              <table className="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th scope="col">Date</th>
-                    <th scope="col">Document Type</th>
-                    <th scope="col">AI Disease</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Doctor Review</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {diagnostics.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-muted text-center py-4">No diagnostic records found</td>
-                    </tr>
-                  ) : (
-                    diagnostics.map((d) => (
-                      <tr key={d.id}>
-                        <td className="text-muted">{new Date(d.created_at).toLocaleString()}</td>
-                        <td>{d.document_type}</td>
-                        <td>{d.disease_id}</td>
-                        <td>
-                          {d.status === 'pending' ? (
-                            <span className="badge bg-warning text-dark">Pending</span>
+          <div className="col-12 space-y-4">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <h2 className="text-lg font-bold text-zinc-900 tracking-tight flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-teal-600" />
+                    Disease Models &amp; Scans
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Automated AI disease predictions and verified physician clinical evaluations.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setViewMode('scan'); setDocTypeSelection('scan'); }}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-teal-600 text-white hover:bg-teal-700 transition-all shadow-xs cursor-pointer"
+                  >
+                    + Upload New Scan
+                  </button>
+                  <button
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 border border-slate-200 text-zinc-700 hover:bg-slate-100 transition-all disabled:opacity-50 cursor-pointer"
+                    onClick={() => refreshDiagnostics()}
+                    disabled={isRefreshing}
+                  >
+                    {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+              </div>
+
+              {diagnostics.length === 0 ? (
+                <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 my-6">
+                  <Activity className="h-10 w-10 text-zinc-300 mx-auto mb-3" />
+                  <h3 className="text-sm font-bold text-zinc-900">No disease scans recorded yet</h3>
+                  <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                    Upload an X-Ray, MRI, or dermoscopy scan to run AI diagnostics and receive specialist physician verification.
+                  </p>
+                  <button
+                    onClick={() => { setViewMode('scan'); setDocTypeSelection('scan'); }}
+                    className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 text-white hover:bg-teal-700 transition-all shadow-xs"
+                  >
+                    Upload Disease Scan Now
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
+                  {diagnostics.map((d) => {
+                    const prediction = d.ai_prediction || {};
+                    const isPending = d.status === 'pending';
+                    const diseaseFormatted = (d.disease_id || 'Scan').replace(/_/g, ' ').toUpperCase();
+
+                    return (
+                      <div
+                        key={d.id}
+                        className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col"
+                      >
+                        {/* Card Header */}
+                        <div className="bg-slate-50/80 px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">
+                              {diseaseFormatted}
+                            </span>
+                            <p className="text-[11px] text-zinc-400">
+                              {new Date(d.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          {isPending ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              Pending Specialist Review
+                            </span>
                           ) : (
-                            <span className="badge bg-success">Reviewed</span>
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                              ✓ Reviewed by Doctor
+                            </span>
                           )}
-                        </td>
-                        <td>
-                          {d.status === 'reviewed' ? (
-                            <div className="small">
-                              <div className="fw-semibold text-zinc-900">
-                                {d.is_accurate ? '✅ Accurate' : '❌ False'}
-                              </div>
-                              <div className="text-muted mt-1">{d.doctor_review || 'No notes'}</div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="p-5 flex-1 space-y-4">
+                          <div className="flex gap-4">
+                            {/* Image Thumbnail */}
+                            <div className="w-24 h-24 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                              {d.document_url ? (
+                                <img
+                                  src={d.document_url}
+                                  alt={d.disease_id}
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <span className="text-[10px] text-zinc-500 text-center px-1">Scan Image</span>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-muted small">Awaiting doctor review</span>
+
+                            {/* AI Prediction Summary */}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold text-zinc-500">AI Deep Learning Assessment</div>
+                              <div className="text-sm font-bold text-zinc-900 truncate mt-0.5">
+                                {prediction.prediction || prediction.status || 'Diagnostic Analysis Complete'}
+                              </div>
+                              {prediction.confidence !== undefined && (
+                                <div className="text-xs text-teal-600 font-semibold mt-1 flex items-center gap-1.5">
+                                  <span>Model Confidence:</span>
+                                  <span className="px-1.5 py-0.5 rounded bg-teal-50 border border-teal-200/60 font-mono text-[11px]">
+                                    {typeof prediction.confidence === 'number' && prediction.confidence <= 1
+                                      ? `${Math.round(prediction.confidence * 100)}%`
+                                      : `${prediction.confidence}%`}
+                                  </span>
+                                </div>
+                              )}
+                              {prediction.severity && (
+                                <div className="text-[11px] text-zinc-500 mt-1">
+                                  Clinical Severity: <strong className="text-zinc-700">{prediction.severity}</strong>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Key Findings from AI */}
+                          {Array.isArray(prediction.key_findings) && prediction.key_findings.length > 0 && (
+                            <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-100 text-xs">
+                              <span className="font-semibold text-zinc-600 block mb-1">Radiological Findings:</span>
+                              <ul className="list-disc list-inside text-zinc-600 space-y-0.5">
+                                {prediction.key_findings.slice(0, 2).map((item: string, idx: number) => (
+                                  <li key={idx} className="truncate">{item}</li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+
+                          {/* Doctor Review Section */}
+                          <div className={`rounded-xl p-3.5 border text-xs ${
+                            isPending 
+                              ? 'bg-amber-50/50 border-amber-200/70 text-amber-900' 
+                              : 'bg-emerald-50/50 border-emerald-200/70 text-emerald-950'
+                          }`}>
+                            {isPending ? (
+                              <div className="flex items-center gap-2 text-amber-800">
+                                <span className="font-semibold">Queue Status:</span>
+                                <span>Assigned to matching medical specialist for clinical review.</span>
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-emerald-900 flex items-center gap-1">
+                                    {d.is_accurate ? '✅ Verified Accurate' : '⚠️ Refined / Alternate Diagnosis'}
+                                  </span>
+                                  {d.doctorSpecialty && (
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white border border-emerald-200 text-emerald-800">
+                                      {d.doctorSpecialty}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-zinc-700 text-xs italic bg-white/70 p-2.5 rounded-lg border border-emerald-100">
+                                  "{d.doctor_review || 'Reviewed and confirmed by specialist.'}"
+                                </p>
+                                {d.doctorName && (
+                                  <div className="text-[11px] text-zinc-500 text-right font-medium">
+                                    — Reviewed by {d.doctorName}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
-        </div>
         )}
 
         {viewMode === 'view' && (

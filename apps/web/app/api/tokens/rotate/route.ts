@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   const refreshToken = body.refreshToken as string;
   if (!refreshToken) return NextResponse.json({ error: 'refreshToken required' }, { status: 400 });
 
-  const claims = verifyToken(refreshToken);
+  const claims: any = verifyToken(refreshToken);
   if (!claims || claims.tokenType !== 'refresh') {
     return NextResponse.json({ error: 'invalid_refresh_token' }, { status: 401 });
   }

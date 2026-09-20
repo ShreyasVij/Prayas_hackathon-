@@ -48,12 +48,13 @@ export interface AppointmentDocument {
   appointmentTime: string;
   date: string;
   duration?: number;
-  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled' | 'upcoming' | string;
   reason?: string;
   notes?: string;
   diagnosis?: string;
   prescription?: string;
   googleEventId?: string;
+  syncedToGoogle?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

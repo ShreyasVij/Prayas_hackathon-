@@ -115,7 +115,7 @@ export async function POST(req: Request) {
         _id: new ObjectId(),
         doctorId: doctor._id,
         patientId: patient._id,
-        patientName: patient.name || authUser.name || "Anonymous",
+        patientName: patient.name || authUser.user_metadata?.name || authUser.user_metadata?.fullName || "Anonymous",
         patientEmail: patient.email, // Save patient email for notifications
         patientAge: patientAge || 0, // 0 indicates not provided
         patientGender: patientGender || "Other",
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
         const denyUrl = `${baseUrl}/api/appointments/update-status?appointmentId=${newAppointment._id.toString()}&status=rejected`;
         const emailTemplate = getRequestEmailTemplate({
           doctorName: doctor.name || "Doctor",
-          patientName: patient.name || authUser.name || "Anonymous",
+          patientName: patient.name || authUser.user_metadata?.name || authUser.user_metadata?.fullName || "Anonymous",
           appointmentTime: `${date} ${time}`,
           acceptUrl,
           denyUrl,
