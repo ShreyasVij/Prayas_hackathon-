@@ -68,6 +68,11 @@ const DISEASE_LABELS: Record<string, { organ: string; modality: string; sampleFi
     modality: "12-Lead ECG",
     sampleFindings: ["Irregular R-R intervals with absent P waves", "Premature ventricular complexes (PVCs)", "Rate: 88 bpm"],
   },
+  heart_murmur: {
+    organ: "Cardiovascular System",
+    modality: "Phonocardiogram / Echocardiogram",
+    sampleFindings: ["Systolic ejection murmur heard at 2nd right intercostal space", "No radiation to carotids", "S1 and S2 present"],
+  },
 };
 
 export async function POST(request: Request) {

@@ -9,7 +9,7 @@ const supabaseAdmin = createServiceRoleClient(supabaseUrl, supabaseServiceKey);
 export const ALL_SUPPORTED_DISEASES = [
   "pneumonia", "covid19", "tuberculosis", "lung_cancer", "melanoma",
   "diabetic_retinopathy", "glaucoma", "brain_tumor", "alzheimers",
-  "breast_cancer", "leukemia", "arrhythmia",
+  "breast_cancer", "leukemia", "arrhythmia", "heart_murmur"
 ];
 
 export const SPECIALTY_DISEASE_MAP: Record<string, string[]> = {
@@ -30,9 +30,9 @@ export const SPECIALTY_DISEASE_MAP: Record<string, string[]> = {
   oncology: ["breast_cancer", "leukemia", "lung_cancer", "melanoma", "brain_tumor"],
   oncologist: ["breast_cancer", "leukemia", "lung_cancer", "melanoma", "brain_tumor"],
   cancer: ["breast_cancer", "leukemia", "lung_cancer", "melanoma", "brain_tumor"],
-  cardiology: ["arrhythmia"],
-  cardiologist: ["arrhythmia"],
-  heart: ["arrhythmia"],
+  cardiology: ["arrhythmia", "heart_murmur"],
+  cardiologist: ["arrhythmia", "heart_murmur"],
+  heart: ["arrhythmia", "heart_murmur"],
   radiology: ALL_SUPPORTED_DISEASES,
   radiologist: ALL_SUPPORTED_DISEASES,
   general: ALL_SUPPORTED_DISEASES,

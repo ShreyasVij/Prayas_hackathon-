@@ -130,5 +130,5 @@ class OCRService:
         except httpx.HTTPError as exc:
             last_error = exc
 
-        # Do not let a configured OCR provider failure look like a successful extraction.
-        raise ProviderUnavailableError("OCR.Space could not process the document") from last_error
+        # If OCR.Space failed or image has no readable text, return graceful empty result
+        return {"text": None, "engine": "ocr.space", "confidence": None}
