@@ -470,16 +470,6 @@ export default function DocumentsPage() {
           </button>
           <button
             className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              viewMode === 'scan'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-zinc-600 hover:text-zinc-900'
-            }`}
-            onClick={() => setViewMode('scan')}
-          >
-            Scan &amp; Upload
-          </button>
-          <button
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
               viewMode === 'view'
                 ? 'bg-teal-600 text-white shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
