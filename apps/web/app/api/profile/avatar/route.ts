@@ -9,7 +9,7 @@ import type { UserDocument } from "@db/users";
 // Use a dedicated avatars bucket, do not fall back to a global bucket
 const BUCKET = process.env.SUPABASE_AVATARS_BUCKET || "pfp";
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
-const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp"]; 
+const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp" , "image/wav"]; 
 
 function extForMime(m: string): string {
   switch (m) {
@@ -20,6 +20,8 @@ function extForMime(m: string): string {
       return "png";
     case "image/webp":
       return "webp";
+    case "image/wav":
+      return "wav";
     default:
       return "bin";
   }

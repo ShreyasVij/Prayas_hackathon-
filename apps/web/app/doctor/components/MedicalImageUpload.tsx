@@ -43,14 +43,14 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Accepted medical image types
-  const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/dicom", "application/dicom"];
+  const acceptedTypes = ["image/jpeg", "image/png", "image/webp","image/wav", "image/dicom", "application/dicom"];
   const maxSizeBytes = 50 * 1024 * 1024; // 50MB
 
   const handleFile = (file: File) => {
     setErrorMessage(null);
 
-    if (!file.type.startsWith("image/") && ![".dcm", ".dicom"].some((extension) => file.name.toLowerCase().endsWith(extension))) {
-      setErrorMessage("Please select a valid medical image (JPEG, PNG, WebP, or DICOM).");
+    if (!file.type.startsWith("image/") && !file.type.startsWith("audio/") && ![".dcm", ".dicom", ".wav"].some((extension) => file.name.toLowerCase().endsWith(extension))) {
+      setErrorMessage("Please select a valid medical file (JPEG, PNG, WAV, WebP, or DICOM).");
       return;
     }
 
@@ -61,7 +61,7 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
 
     setSelectedFile(file);
 
-    // Create object URL for preview
+    // Create object URL for preview (WAV will not render as an image, but the URL is valid)
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
   };
@@ -111,7 +111,7 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
     setIsAnalyzing(true);
     setErrorMessage(null);
     setProgressPercent(15);
-    setAnalysisStep("Uploading image securely...");
+    setAnalysisStep("Uploading file securely...");
 
     try {
       const formData = new FormData();
@@ -182,7 +182,7 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
               </h2>
             </div>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              Upload radiological scans or clinical imagery for automated diagnostic analysis.
+              Upload radiological scans, audio files, or clinical imagery for automated diagnostic analysis.
             </p>
           </div>
         </div>
@@ -238,7 +238,7 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,.dcm,.dicom"
+            accept="image/*,audio/*,.dcm,.dicom,.wav"
             onChange={handleFileChange}
             className="hidden"
           />
@@ -249,10 +249,10 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
 
           <div className="space-y-1.5 max-w-md">
             <p className="text-sm font-bold text-zinc-800">
-              Drag & drop medical image, or <span className="text-teal-600 hover:underline">browse file</span>
+              Drag & drop medical image or audio, or <span className="text-teal-600 hover:underline">browse file</span>
             </p>
             <p className="text-xs text-zinc-500 leading-relaxed">
-              Supports high-resolution DICOM, PNG, JPEG, WebP (up to 50MB)
+              Supports high-resolution DICOM, PNG, JPEG, WebP, and WAV (up to 50MB)
             </p>
           </div>
 
@@ -261,6 +261,7 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
             <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">CT Slices</span>
             <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">MRI Neuro</span>
             <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">Dermoscopy</span>
+            <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 shadow-2xs">Heart Audio</span>
           </div>
         </div>
       ) : (
