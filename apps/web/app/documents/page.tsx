@@ -1018,33 +1018,54 @@ export default function DocumentsPage() {
                         {/* Card Body */}
                         <div className="p-5 flex-1 space-y-4">
                           <div className="flex gap-4">
-                            {/* Image Thumbnail */}
-                            <div className="w-24 h-24 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative group">
-                              {d.document_url ? (
-                                <a
-                                  href={d.document_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Click to view full scan"
-                                  className="w-full h-full flex items-center justify-center"
-                                >
-                                  <img
-                                    src={d.document_url}
-                                    alt={d.disease_id}
-                                    className="w-full h-full object-contain hover:scale-105 transition-transform"
-                                    crossOrigin="anonymous"
-                                  />
-                                </a>
-                              ) : (
-                                <span className="text-[10px] text-zinc-500 text-center px-1">Scan Image</span>
-                              )}
-                            </div>
+                          {/* Image Thumbnails — original + heatmap if available */}
+                          {(() => {
+                            const hm =
+                              d.heatmap_url ||
+                              prediction?.heatmap_url ||
+                              null;
+                            return hm ? (
+                              <div className="flex gap-2 shrink-0">
+                                <div className="w-14 h-14 rounded-lg bg-zinc-950 border border-zinc-800 overflow-hidden flex items-center justify-center relative">
+                                  {d.document_url ? (
+                                    <img src={d.document_url} alt="scan" className="w-full h-full object-contain" crossOrigin="anonymous" />
+                                  ) : <span className="text-[9px] text-zinc-500">Scan</span>}
+                                  <span className="absolute bottom-0 left-0 right-0 bg-zinc-900/80 text-[8px] text-zinc-300 font-bold text-center py-0.5">Orig</span>
+                                </div>
+                                <div className="w-14 h-14 rounded-lg bg-zinc-950 border border-orange-900 overflow-hidden flex items-center justify-center relative">
+                                  <img src={hm} alt="heatmap" className="w-full h-full object-contain" />
+                                  <span className="absolute bottom-0 left-0 right-0 bg-orange-900/80 text-[8px] text-orange-200 font-bold text-center py-0.5">Heatmap</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-24 h-24 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative group">
+                                {d.document_url ? (
+                                  <a
+                                    href={d.document_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Click to view full scan"
+                                    className="w-full h-full flex items-center justify-center"
+                                  >
+                                    <img
+                                      src={d.document_url}
+                                      alt={d.disease_id}
+                                      className="w-full h-full object-contain hover:scale-105 transition-transform"
+                                      crossOrigin="anonymous"
+                                    />
+                                  </a>
+                                ) : (
+                                  <span className="text-[10px] text-zinc-500 text-center px-1">Scan Image</span>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                             {/* AI Prediction Summary */}
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-semibold text-zinc-500">AI Deep Learning Assessment</div>
                               <div className="text-sm font-bold text-zinc-900 truncate mt-0.5">
-                                {prediction.prediction || prediction.status || 'Diagnostic Analysis Complete'}
+                                {prediction.primary_prediction || prediction.prediction || prediction.status || 'Diagnostic Analysis Complete'}
                               </div>
                               {prediction.confidence !== undefined && (
                                 <div className="text-xs text-teal-600 font-semibold mt-1 flex items-center gap-1.5">

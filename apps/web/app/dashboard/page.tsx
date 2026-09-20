@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import { Salad, Moon, Dumbbell, Sun, Brain, Utensils, ChevronDown, ChevronUp } from "lucide-react";
 
 // Layout & data hooks
 import { useVitals } from "@/hooks/useVitals";
@@ -25,6 +26,16 @@ interface HealthSummary {
   [key: string]: any;
 }
 
+interface LifestylePlan {
+  morning_routine?: string;
+  breakfast?: string;
+  lunch?: string;
+  dinner?: string;
+  exercise?: string;
+  sleep?: string;
+  stress_management?: string;
+}
+
 function useHydrated() {
   const [hydrated, setHydrated] = useState(false);
 
@@ -35,9 +46,57 @@ function useHydrated() {
   return hydrated;
 }
 
+// ─── Lifestyle Plan Card ─────────────────────────────────────────────────────
+
+function LifestylePlanCard({ plan }: { plan: LifestylePlan }) {
+  const [expanded, setExpanded] = useState(false);
+  const items = [
+    { icon: <Sun className="h-4 w-4 text-amber-500" />, label: "Morning", value: plan.morning_routine },
+    { icon: <Utensils className="h-4 w-4 text-emerald-500" />, label: "Breakfast", value: plan.breakfast },
+    { icon: <Salad className="h-4 w-4 text-teal-500" />, label: "Lunch", value: plan.lunch },
+    { icon: <Utensils className="h-4 w-4 text-orange-400" />, label: "Dinner", value: plan.dinner },
+    { icon: <Dumbbell className="h-4 w-4 text-violet-500" />, label: "Exercise", value: plan.exercise },
+    { icon: <Moon className="h-4 w-4 text-indigo-500" />, label: "Sleep", value: plan.sleep },
+    { icon: <Brain className="h-4 w-4 text-rose-400" />, label: "Stress", value: plan.stress_management },
+  ].filter(item => item.value);
+
+  const visible = expanded ? items : items.slice(0, 3);
+
+  return (
+    <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50/60 to-emerald-50/40 p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-600 mb-0.5">AI Lifestyle Plan</p>
+          <h3 className="text-base font-bold text-zinc-900">Personalised Suggestions</h3>
+        </div>
+        <AIBadge />
+      </div>
+      <div className="space-y-3">
+        {visible.map(item => (
+          <div key={item.label} className="flex items-start gap-3 bg-white/70 rounded-xl px-3 py-2.5 border border-white/80 shadow-xs">
+            <span className="mt-0.5 shrink-0">{item.icon}</span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5">{item.label}</p>
+              <p className="text-xs text-zinc-700 leading-relaxed">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      {items.length > 3 && (
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="mt-3 flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-800 transition-colors"
+        >
+          {expanded ? <><ChevronUp className="h-3.5 w-3.5" /> Show less</> : <><ChevronDown className="h-3.5 w-3.5" /> Show all {items.length} suggestions</>}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Health Status Hero ───────────────────────────────────────────────────────
 
-function HealthStatusHero() {
+function HealthStatusHero({ onLifestylePlan }: { onLifestylePlan?: (plan: LifestylePlan) => void }) {
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [statusText, setStatusText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -46,6 +105,31 @@ function HealthStatusHero() {
 
   useEffect(() => {
     async function fetchSummary() {
+      try {
+        // 1. Try the new Supabase-backed patient health summary (AI scans + Gemini)
+        const supabaseRes = await fetch("/api/patient/health-summary");
+        if (supabaseRes.ok) {
+          const supabaseData = await supabaseRes.json();
+          if (supabaseData.summary) {
+            setSummary(supabaseData);
+            if (supabaseData.lifestyle_plan && onLifestylePlan) {
+              onLifestylePlan(supabaseData.lifestyle_plan);
+            }
+            const plain = supabaseData.summary;
+            if (plain) {
+              setIsStreaming(true);
+              setStatusText(plain);
+              setTimeout(() => setIsStreaming(false), plain.length * 18 + 600);
+            }
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Fall through to legacy endpoint
+      }
+
+      // 2. Fallback to legacy MongoDB health summary
       try {
         const res = await fetch("/api/health-summary");
         if (!res.ok) return;
@@ -91,6 +175,7 @@ function HealthStatusHero() {
       }
     }
     fetchSummary();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const reduce = useReducedMotion();
@@ -173,6 +258,7 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
   groupedVitals: Record<string, any[]>;
   vitalsLoading: boolean;
 }) {
+  const [lifestylePlan, setLifestylePlan] = useState<LifestylePlan | null>(null);
   const reduce = useReducedMotion();
   const hydrated = useHydrated();
   const motionEnabled = hydrated && !reduce;
@@ -196,7 +282,8 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
         gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
         gridTemplateAreas:
           '"hero  hero  qr  " ' +
-          '"chart chart docs"',
+          '"chart chart docs"' +
+          (lifestylePlan ? ' "life  life  life"' : ""),
       }}
     >
       {/* ── Cell 1: Health Status Hero (2/3 width, row 1) ── */}
@@ -205,7 +292,7 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
         className="bento-cell"
         style={{ gridArea: "hero" }}
       >
-        <HealthStatusHero />
+        <HealthStatusHero onLifestylePlan={setLifestylePlan} />
       </motion.div>
 
       {/* ── Cell 2: Emergency QR (1/3 width, row 1) ── */}
@@ -251,6 +338,17 @@ function BentoGrid({ groupedVitals, vitalsLoading }: {
         </div>
         <RecentDocsList />
       </motion.div>
+
+      {/* ── Cell 5: Lifestyle Plan (full-width row 3, only if data) ── */}
+      {lifestylePlan && (
+        <motion.div
+          variants={motionEnabled ? cellVariants : undefined}
+          className="bento-cell"
+          style={{ gridArea: "life" }}
+        >
+          <LifestylePlanCard plan={lifestylePlan} />
+        </motion.div>
+      )}
     </motion.div>
   );
 }

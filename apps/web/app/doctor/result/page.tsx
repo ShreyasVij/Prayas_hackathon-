@@ -21,6 +21,21 @@ type StoredResult = {
   fileName: string;
 };
 
+function extractHeatmap(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+  // Check top-level heatmap_image
+  if (typeof obj.heatmap_image === "string" && obj.heatmap_image.length > 100) return obj.heatmap_image;
+  // Recurse one level (in case nested under result/data)
+  for (const v of Object.values(obj)) {
+    if (v && typeof v === "object") {
+      const nested = v as Record<string, unknown>;
+      if (typeof nested.heatmap_image === "string" && nested.heatmap_image.length > 100) return nested.heatmap_image;
+    }
+  }
+  return null;
+}
+
 type Prediction = { label: string; score: number };
 
 function formatLabel(value: string) {
@@ -68,6 +83,7 @@ function extractPredictions(value: unknown): Prediction[] {
 export default function DiagnosticResultPage() {
   const [result, setResult] = useState<StoredResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [heatmapUrl, setHeatmapUrl] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -79,6 +95,10 @@ export default function DiagnosticResultPage() {
       }
       setResult(JSON.parse(stored) as StoredResult);
       setPreviewUrl(sessionStorage.getItem("diagnosticPreviewUrl"));
+      // Load stored heatmap URL (Supabase Storage URL preferred over raw base64)
+      setHeatmapUrl(
+        sessionStorage.getItem("diagnosticHeatmapUrl") || null
+      );
     } catch {
       setNotFound(true);
     }
@@ -87,15 +107,26 @@ export default function DiagnosticResultPage() {
   const view = useMemo(() => {
     if (!result) return null;
     const response = result.response;
-    const prediction = findValue(response, ["prediction", "predicted_disease", "predicted_label", "label", "class"]);
-    const confidence = toPercentage(findValue(response, ["confidence", "confidence_score", "probability", "score"]));
+    // Support Colab format: primary_prediction, and normalized format: prediction
+    const prediction = findValue(response, [
+      "primary_prediction", "prediction", "predicted_disease", "predicted_label", "label", "class"
+    ]);
+    const confidence = toPercentage(findValue(response, [
+      "confidence", "confidence_score", "probability", "score"
+    ]));
     const modality = findValue(response, ["modality", "image_type", "imaging_type", "scan_type"]);
-    const allPredictions = extractPredictions(findValue(response, ["all_predictions", "predictions", "class_probabilities"]));
+    const diseaseName = findValue(response, ["disease_name", "disease", "disease_id"]);
+    const allPredictions = extractPredictions(
+      findValue(response, ["all_predictions", "predictions", "class_probabilities"])
+    );
+    const heatmap = extractHeatmap(response);
     return {
       prediction: typeof prediction === "string" ? prediction : null,
       confidence,
       modality: typeof modality === "string" ? modality : null,
+      diseaseName: typeof diseaseName === "string" ? diseaseName : null,
       allPredictions,
+      heatmap,
     };
   }, [result]);
 
@@ -143,12 +174,33 @@ export default function DiagnosticResultPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-5 lg:col-span-5">
-          <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-md">
-            {previewUrl ? <img src={previewUrl} alt="Analyzed medical image" className="h-full w-full object-contain" /> : <FileImage className="h-12 w-12 text-zinc-600" />}
-            <span className="absolute bottom-3 left-3 rounded-lg bg-zinc-900/80 px-3 py-1.5 text-[11px] font-semibold text-zinc-200">
-              {view.modality ? formatLabel(view.modality) : "Medical image"}
-            </span>
-          </div>
+          {/* Scan image(s) — original + heatmap side by side if available */}
+          {(heatmapUrl || view.heatmap) ? (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Scan · Grad-CAM Heatmap</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-md">
+                  {previewUrl
+                    ? <img src={previewUrl} alt="Original scan" className="h-full w-full object-contain" />
+                    : <FileImage className="h-10 w-10 text-zinc-600" />}
+                  <span className="absolute bottom-2 left-2 rounded-md bg-zinc-900/80 px-2 py-1 text-[10px] font-semibold text-zinc-300">Original</span>
+                </div>
+                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-orange-900 bg-zinc-950 shadow-md">
+                  <img src={heatmapUrl || view.heatmap!} alt="AI heatmap (Grad-CAM)" className="h-full w-full object-contain" />
+                  <span className="absolute bottom-2 left-2 rounded-md bg-orange-900/80 px-2 py-1 text-[10px] font-semibold text-orange-200">Heatmap</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-md">
+              {previewUrl
+                ? <img src={previewUrl} alt="Analyzed medical image" className="h-full w-full object-contain" />
+                : <FileImage className="h-12 w-12 text-zinc-600" />}
+              <span className="absolute bottom-3 left-3 rounded-lg bg-zinc-900/80 px-3 py-1.5 text-[11px] font-semibold text-zinc-200">
+                {view.modality ? formatLabel(view.modality) : "Medical image"}
+              </span>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
@@ -175,10 +227,18 @@ export default function DiagnosticResultPage() {
               <div>
                 <p className={cn("text-xs font-bold uppercase tracking-wider", isPositive ? "text-amber-800" : "text-emerald-800")}>Primary prediction</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{primaryLabel}</h2>
+                {view.diseaseName && (
+                  <p className="mt-1 text-xs font-semibold text-zinc-500">{formatLabel(view.diseaseName)}</p>
+                )}
               </div>
               {isPositive ? <ShieldAlert className="h-9 w-9 text-amber-600" /> : <CheckCircle2 className="h-9 w-9 text-emerald-600" />}
             </div>
-            <p className="mt-4 text-xs leading-relaxed text-zinc-600">
+            {view.modality && (
+              <p className="mt-3 text-[11px] font-medium text-zinc-500">
+                <span className="font-semibold">Modality:</span> {formatLabel(view.modality)}
+              </p>
+            )}
+            <p className="mt-3 text-xs leading-relaxed text-zinc-600">
               This is a model-generated result for clinical review. It should be interpreted alongside patient history and professional assessment.
             </p>
           </div>
