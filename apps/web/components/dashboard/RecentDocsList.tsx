@@ -1,97 +1,110 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, ArrowRight } from "lucide-react";
+import { FileText, Activity, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
-import { StatusPill } from "@/components/ui/status-pill";
 
-interface DocumentItem {
-  _id: string;
-  fileName: string;
-  originalName?: string;
-  status?: string;
-  processingStatus?: string;
-  docType?: string;
-  category?: string;
-  summary?: string;
-  summary_full?: unknown;
-  uploadedAt?: string;
-  createdAt?: string;
+interface DocItem {
+  id: string;
+  name: string;
+  date?: string;
+  status: "processed" | "pending" | "flagged" | "error";
+  category: string;
+  href: string;
 }
 
-/**
- * RecentDocsList — minimalist recent-documents panel for the Bento Box.
- * Fetches last 5 active documents. Each row has name, date, and a StatusPill.
- */
-export function RecentDocsList() {
-  const [docs, setDocs] = useState<DocumentItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const STATUS_STYLES = {
+  processed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  pending:   "bg-amber-50  text-amber-700  border-amber-200",
+  flagged:   "bg-orange-50 text-orange-700 border-orange-200",
+  error:     "bg-rose-50   text-rose-700   border-rose-200",
+};
 
-  const FALLBACK_DOCS: DocumentItem[] = [
-    { _id: 'doc-001', fileName: 'Annual_Checkup_2026.pdf', originalName: 'Annual Checkup 2026.pdf', status: 'active', processingStatus: 'processed', createdAt: new Date().toISOString() },
-    { _id: 'doc-002', fileName: 'Complete_Blood_Count.pdf', originalName: 'Complete Blood Count.pdf', status: 'active', processingStatus: 'processed', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-    { _id: 'doc-003', fileName: 'Cardio_Stress_Test.pdf', originalName: 'Cardio Stress Test.pdf', status: 'active', processingStatus: 'flagged', createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-    { _id: 'doc-004', fileName: 'Chest_XRay_Digital.pdf', originalName: 'Chest X-Ray Digital.pdf', status: 'active', processingStatus: 'processed', createdAt: new Date(Date.now() - 86400000 * 12).toISOString() },
-    { _id: 'doc-005', fileName: 'Metabolic_Panel.pdf', originalName: 'Metabolic Panel.pdf', status: 'active', processingStatus: 'pending', createdAt: new Date(Date.now() - 86400000 * 20).toISOString() },
-  ];
+const STATUS_LABELS = {
+  processed: "Verified",
+  pending:   "Pending",
+  flagged:   "Flagged",
+  error:     "Error",
+};
+
+function formatDate(dateStr?: string) {
+  if (!dateStr) return "";
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  } catch { return ""; }
+}
+
+export function RecentDocsList() {
+  const [docs, setDocs] = useState<DocItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchDocs() {
+      const results: DocItem[] = [];
+
+      // 1. Fetch Supabase-backed medical scans (AI diagnostics)
+      try {
+        const res = await fetch("/api/patient/diagnostics");
+        if (res.ok) {
+          const data = await res.json();
+          const records: any[] = data?.records || [];
+          for (const rec of records.slice(0, 5)) {
+            const aiPred = rec.ai_prediction;
+            const prediction =
+              (typeof aiPred?.primary_prediction === "string" ? aiPred.primary_prediction : null) ||
+              (typeof aiPred?.prediction === "string" ? aiPred.prediction : null) ||
+              null;
+            const status: DocItem["status"] =
+              rec.status === "verified" ? "processed" :
+              rec.status === "pending"  ? "pending"   : "flagged";
+            results.push({
+              id: rec.id,
+              name: prediction
+                ? `${(rec.disease_id || "Scan").replace(/_/g, " ")} · ${prediction}`
+                : (rec.disease_id || "Medical Scan").replace(/_/g, " "),
+              date: rec.created_at,
+              status,
+              category: "AI Scan",
+              href: "/documents",
+            });
+          }
+        }
+      } catch { /* non-fatal */ }
+
+      // 2. Fetch MongoDB documents (uploaded PDFs / reports)
       try {
         const res = await fetch("/api/documents?status=active&limit=5");
-        if (!res.ok) throw new Error("Failed to load documents");
-        const data = await res.json();
-        const list: DocumentItem[] = data?.data || data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          setDocs(list.slice(0, 5));
-        } else {
-          setDocs(FALLBACK_DOCS);
+        if (res.ok) {
+          const data = await res.json();
+          const list: any[] = data?.data || [];
+          for (const doc of list.slice(0, 5)) {
+            const hasSummary =
+              (typeof doc.summary === "string" && doc.summary.trim().length > 0) ||
+              (doc.summary_full && typeof doc.summary_full === "object" && Object.keys(doc.summary_full).length > 0);
+            const rawStatus = (doc.processingStatus || doc.status || "pending").toLowerCase();
+            const status: DocItem["status"] =
+              hasSummary || rawStatus === "processed" || rawStatus === "completed" ? "processed" :
+              rawStatus === "flagged" || rawStatus === "review" ? "flagged" :
+              rawStatus === "error" || rawStatus === "failed" ? "error" : "pending";
+            results.push({
+              id: doc.id || doc._id,
+              name: doc.originalName || doc.fileName || "Untitled Document",
+              date: doc.createdAt || doc.uploadedAt,
+              status,
+              category: (doc.docType || doc.category || "Document").replace(/[-_]+/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()),
+              href: "/documents",
+            });
+          }
         }
-      } catch (err: any) {
-        setDocs(FALLBACK_DOCS);
-      } finally {
-        setLoading(false);
-      }
+      } catch { /* non-fatal */ }
+
+      // Sort by date desc, take 5
+      results.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      setDocs(results.slice(0, 5));
+      setLoading(false);
     }
     fetchDocs();
   }, []);
-
-  function resolveStatus(doc: DocumentItem): string {
-    const hasSummary =
-      (typeof doc.summary === "string" && doc.summary.trim().length > 0) ||
-      (typeof doc.summary_full === "string" && doc.summary_full.trim().length > 0) ||
-      (doc.summary_full !== null &&
-        typeof doc.summary_full === "object" &&
-        Object.keys(doc.summary_full).length > 0);
-    if (hasSummary) return "processed";
-
-    const raw = doc.processingStatus || doc.status || "pending";
-    const lower = raw.toLowerCase();
-    if (lower === "completed" || lower === "processed") return "processed";
-    if (lower === "flagged" || lower === "review")     return "flagged";
-    if (lower === "error"   || lower === "failed")     return "error";
-    return "pending";
-  }
-
-  function formatDate(dateStr?: string) {
-    if (!dateStr) return "";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    } catch {
-      return "";
-    }
-  }
-
-  function formatCategory(doc: DocumentItem) {
-    const category = doc.category || doc.docType || "Other";
-    return category
-      .replace(/[-_]+/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
-  }
 
   if (loading) {
     return (
@@ -106,25 +119,14 @@ export function RecentDocsList() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-5 text-sm text-muted-foreground">
-        Could not load documents.
-      </div>
-    );
-  }
-
   if (docs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
         <FileText className="h-8 w-8 text-slate-300" strokeWidth={1.5} />
         <p className="text-sm text-muted-foreground">
-          No documents yet. Upload your first medical record to get started.
+          No records yet. Upload your first medical record to get started.
         </p>
-        <Link
-          href="/documents"
-          className="text-xs text-teal-600 hover:text-teal-700 font-medium no-underline"
-        >
+        <Link href="/documents" className="text-xs text-teal-600 hover:text-teal-700 font-medium no-underline">
           Go to Documents →
         </Link>
       </div>
@@ -134,22 +136,25 @@ export function RecentDocsList() {
   return (
     <div className="flex flex-col">
       <ul className="divide-y divide-border">
-        {docs.map((doc) => {
-          const date = formatDate(doc.uploadedAt || doc.createdAt);
-          const fileName = doc.originalName || doc.fileName || "Untitled";
-          const name = `${fileName} · ${date || "Recent"} · ${formatCategory(doc)}`;
-          const status = resolveStatus(doc);
-
-          return (
-            <li key={doc._id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
-              <FileText className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={1.5} aria-hidden />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-zinc-800 truncate">{name}</p>
-              </div>
-              <StatusPill status={status} className="shrink-0" />
-            </li>
-          );
-        })}
+        {docs.map((doc) => (
+          <li key={doc.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+            {doc.category === "AI Scan"
+              ? <Activity className="h-4 w-4 text-teal-500 shrink-0" strokeWidth={1.5} aria-hidden />
+              : <FileText className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={1.5} aria-hidden />}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-zinc-800 truncate capitalize">{doc.name}</p>
+              {doc.date && (
+                <p className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
+                  <Clock className="h-2.5 w-2.5" />
+                  {formatDate(doc.date)} · {doc.category}
+                </p>
+              )}
+            </div>
+            <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLES[doc.status]}`}>
+              {STATUS_LABELS[doc.status]}
+            </span>
+          </li>
+        ))}
       </ul>
 
       <div className="px-5 py-3 border-t border-border">

@@ -7,6 +7,48 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supab
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key";
 const supabaseAdmin = createServiceRoleClient(supabaseUrl, supabaseServiceKey);
 
+/** Convert a base64 data URI to a Blob / Buffer and upload to Supabase Storage.
+ *  Returns the public URL on success, or null on failure. */
+async function uploadHeatmapToStorage(
+  base64DataUri: string,
+  userId: string,
+): Promise<string | null> {
+  try {
+    // Strip "data:image/jpeg;base64," prefix
+    const matches = base64DataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!matches) return null;
+    const mimeType = matches[1];
+    const ext = mimeType.split("/")[1] || "jpg";
+    const base64Data = matches[2];
+
+    // Convert base64 to Buffer
+    const buffer = Buffer.from(base64Data, "base64");
+    const storageKey = `heatmaps/${userId}/${Date.now()}-heatmap.${ext}`;
+
+    // Upload buffer to Supabase storage
+    const { error } = await supabaseAdmin.storage
+      .from("medilocker")
+      .upload(storageKey, buffer, {
+        contentType: mimeType,
+        upsert: false,
+      });
+
+    if (error) {
+      console.warn("Heatmap upload error:", error.message);
+      return null;
+    }
+
+    const { data: pubUrl } = supabaseAdmin.storage
+      .from("medilocker")
+      .getPublicUrl(storageKey);
+
+    return pubUrl.publicUrl || null;
+  } catch (e) {
+    console.warn("uploadHeatmapToStorage failed:", e);
+    return null;
+  }
+}
+
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
@@ -70,7 +112,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Medical scan image file is required." }, { status: 400 });
     }
 
-    // 1. Upload to Supabase Storage bucket
+    // 1. Upload scan to Supabase Storage bucket
     const fileExt = file.name.split(".").pop() || "png";
     const storageKey = `scans/${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     
@@ -94,9 +136,22 @@ export async function POST(req: Request) {
     }
 
     let aiPrediction: any = null;
+    let heatmapUrl: string | null = null;
+
     if (predictionRaw) {
       try {
         aiPrediction = JSON.parse(predictionRaw);
+
+        // 2. Extract and upload heatmap_image to storage (don't store large base64 in DB)
+        if (aiPrediction?.heatmap_image && typeof aiPrediction.heatmap_image === "string") {
+          heatmapUrl = await uploadHeatmapToStorage(aiPrediction.heatmap_image, user.id);
+          // Remove base64 from stored JSON to keep DB lean — store URL instead
+          const { heatmap_image: _stripped, ...predWithoutHeatmap } = aiPrediction;
+          aiPrediction = {
+            ...predWithoutHeatmap,
+            heatmap_url: heatmapUrl || undefined,
+          };
+        }
       } catch {
         aiPrediction = { raw: predictionRaw };
       }
@@ -118,7 +173,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Insert into medical_records with status 'pending'
+    // 3. Insert into medical_records with status 'pending'
     const { data: newRecord, error: insertError } = await supabaseAdmin
       .from("medical_records")
       .insert({
@@ -127,6 +182,7 @@ export async function POST(req: Request) {
         document_type: "scan",
         disease_id: diseaseId,
         ai_prediction: aiPrediction,
+        heatmap_url: heatmapUrl,          // dedicated column
         status: "pending",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -135,11 +191,31 @@ export async function POST(req: Request) {
       .single();
 
     if (insertError) {
-      console.error("Error inserting medical record:", insertError);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      // heatmap_url column might not exist yet — retry without it
+      console.warn("Insert with heatmap_url failed, retrying without:", insertError.message);
+      const { data: fallbackRecord, error: fallbackError } = await supabaseAdmin
+        .from("medical_records")
+        .insert({
+          patient_id: user.id,
+          document_url: documentUrl,
+          document_type: "scan",
+          disease_id: diseaseId,
+          ai_prediction: aiPrediction,
+          status: "pending",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (fallbackError) {
+        console.error("Error inserting medical record:", fallbackError);
+        return NextResponse.json({ error: fallbackError.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, record: fallbackRecord, heatmap_url: heatmapUrl }, { status: 201 });
     }
 
-    return NextResponse.json({ success: true, record: newRecord }, { status: 201 });
+    return NextResponse.json({ success: true, record: newRecord, heatmap_url: heatmapUrl }, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/patient/diagnostics error:", error);
     return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });
