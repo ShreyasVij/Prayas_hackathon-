@@ -406,39 +406,11 @@ export async function POST(request: NextRequest) {
       // not prevent the upload itself from proceeding.
     }
 
-    // Debug logging retained from the existing implementation.
-    const fs = await import("fs");
-    const path = await import("path");
-
-    const logPath = path.join(
-      process.cwd(),
-      "apps",
-      "ai",
-      "logs",
-      "ocr_upsert_debug.log",
-    );
-
-    function logToFile(msg: string) {
-      const dir = path.dirname(logPath);
-
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      fs.appendFileSync(
-        logPath,
-        `[${new Date().toISOString()}] ${msg}\n`,
-      );
-    }
-
     console.log(
       "[DOCUMENTS][POST] initialMeta:",
       initialMeta,
     );
 
-    logToFile(
-      `[POST] initialMeta: ${JSON.stringify(initialMeta)}`,
-    );
 
     if (
       initialMeta &&
@@ -451,9 +423,6 @@ export async function POST(request: NextRequest) {
         preview,
       );
 
-      logToFile(
-        `[POST] initialMeta.raw_text: ${preview}`,
-      );
     }
 
     const { role, actorId } = await getIdentity();
@@ -659,8 +628,8 @@ export async function POST(request: NextRequest) {
           },
         );
 
-        logToFile(
-          `[POST] Upserting OCR output: id=${docId}:${versionId}, text=${preview}`,
+        console.log(
+          `[DOCUMENTS][POST] Upserting OCR output: id=${docId}:${versionId}, text=${preview}`,
         );
 
         await ocrCol.updateOne(
@@ -693,10 +662,9 @@ export async function POST(request: NextRequest) {
           initialMeta,
         );
 
-        logToFile(
-          `[POST] No valid raw_text found in initialMeta: ${JSON.stringify(
-            initialMeta,
-          )}`,
+        console.warn(
+          "[DOCUMENTS][POST] No valid raw_text found in initialMeta:",
+          initialMeta,
         );
       }
 
