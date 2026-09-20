@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import DocumentReviewForm, { ExtractedDocument } from "@/components/DocumentReviewForm";
@@ -1227,229 +1228,716 @@ export default function DocumentsPage() {
           </div>
         </div>
         )}
-
-        {viewerOpen && viewerDoc && (
-          <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-            <div className="bg-white rounded shadow" style={{ width: '95%', height: '92%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {/* Header bar to avoid overlay conflicts */}
-              <div style={{ height: 44, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 12px' }}>
-                <button className="btn btn-sm btn-outline-danger" onClick={()=>{ setViewerOpen(false); setViewerUrl(null); setViewerDoc(null); setViewerAnalysis(null); }}>✕</button>
-              </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'row', gap: 0, minHeight: 0 }}>
-                {/* Left: document */}
-                <div style={{ width: '60%', height: '100%', minHeight: 0, display: 'flex', alignItems: 'stretch', justifyContent: 'stretch', overflowY: 'auto', overflowX: 'hidden', padding: 0, margin: 0, boxSizing: 'border-box', overscrollBehavior: 'contain', scrollbarGutter: 'stable' as any }}>
-                  {viewerError ? (
-                    <div className="alert alert-warning m-3">
-                      <div className="fw-semibold">Document preview unavailable</div>
-                      <div className="small">{viewerError}</div>
-                    </div>
-                  ) : viewerUrls && viewerUrls.length > 1 ? (
-                    <div style={{ width: '100%' }}>
-                      {viewerUrls.map((u, idx) => (
-                        <div key={u+idx} className="mb-2">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={u} alt={`Page ${idx+1}`} style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} />
-                        </div>
-                      ))}
-                    </div>
-                  ) : viewerUrl && (viewerUrl.endsWith('.png') || viewerUrl.endsWith('.jpg') || viewerUrl.endsWith('.jpeg')) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={viewerUrl} alt="Document" style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} />
-                  ) : (
-                    viewerUrl ? <iframe src={(viewerUrl + '#toolbar=0&navpanes=0&scrollbar=1')} title="Document Viewer" style={{ width: '100%', height: '100%', border: 'none' }} /> : null
-                  )}
+        {viewerOpen && viewerDoc && typeof document !== "undefined" && createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Document viewer"
+            style={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100dvh",
+              background: "rgba(15, 23, 42, 0.68)",
+              backdropFilter: "blur(3px)",
+              WebkitBackdropFilter: "blur(3px)",
+              zIndex: 99999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "clamp(12px, 2vw, 28px)",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                width: "min(1500px, 100%)",
+                height: "min(94dvh, 980px)",
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                background: "#ffffff",
+                borderRadius: 20,
+                overflow: "hidden",
+                boxShadow: "0 30px 80px rgba(0, 0, 0, 0.28)",
+                border: "1px solid rgba(226, 232, 240, 0.95)",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {/* Viewer header */}
+              <div
+                style={{
+                  flex: "0 0 auto",
+                  minHeight: 58,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  padding: "10px 14px 10px 18px",
+                  borderBottom: "1px solid #e5e7eb",
+                  background: "#ffffff",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#0f766e",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Document Viewer
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#111827",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={viewerDoc?.originalName || viewerDoc?.fileName || "Medical Document"}
+                  >
+                    {viewerDoc?.originalName || viewerDoc?.fileName || "Medical Document"}
+                  </div>
                 </div>
-                {/* Right: information panel */}
-                <div style={{ width: '40%', height: '100%', minHeight: 0, padding: '12px 16px 16px 4px', overflowY: 'auto', overflowX: 'hidden', borderLeft: 'none', margin: 0, boxSizing: 'border-box', overscrollBehavior: 'contain', scrollbarGutter: 'stable' as any }}>
-                  {(() => { const s = summarizeToObject(viewerDoc?.summary_full ?? viewerDoc?.summary); return (
-                    <div className="alert alert-warning p-2 mb-3" style={{ fontSize: '0.9rem' }}>
-                      {s.disclaimer}
-                    </div>
-                  ); })()}
-                  <h3 className="h6">Extracted Information</h3>
-                  <div className="mb-2 text-muted small">{viewerDoc?.docType ? (`Type: ${viewerDoc.docType}`) : ''}</div>
-                  <dl className="row mb-3">
-                    <dt className="col-4">Patient Name</dt><dd className="col-8">{viewerDoc?.patient_name || '—'}</dd>
-                    <dt className="col-4">Date of Birth</dt><dd className="col-8">{viewerDoc?.dob || '—'}</dd>
-                    <dt className="col-4">Doctor Name</dt><dd className="col-8">{viewerDoc?.doctorName || viewerDoc?.doctor_name || '—'}</dd>
-                    <dt className="col-4">Diagnosis</dt><dd className="col-8">{viewerDoc?.diagnosis || 'no outright diagnosis by the doctor'}</dd>
-                    <dt className="col-4">Report Date</dt><dd className="col-8">{viewerDoc?.report_date || '—'}</dd>
-                  </dl>
-                  {Array.isArray(viewerDoc?.medications) && viewerDoc.medications.length > 0 && (
-                    <div className="mb-3">
-                      <div className="fw-semibold mb-1">Medications</div>
-                      <ul className="small">
-                        {viewerDoc.medications.map((m: any, idx:number) => (
-                          <li key={idx}>{[m?.name, m?.dose, m?.frequency].filter(Boolean).join(' ')}</li>
+
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  aria-label="Close document viewer"
+                  onClick={() => {
+                    setViewerOpen(false);
+                    setViewerUrl(null);
+                    setViewerUrls(null);
+                    setViewerDoc(null);
+                    setViewerAnalysis(null);
+                    setViewerError("");
+                  }}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 12,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: "0 0 auto",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Viewer content */}
+              <div
+                style={{
+                  flex: "1 1 auto",
+                  minHeight: 0,
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.55fr) minmax(340px, 0.95fr)",
+                  background: "#f8fafc",
+                }}
+              >
+                {/* Left: document */}
+                <div
+                  style={{
+                    minWidth: 0,
+                    minHeight: 0,
+                    overflow: "auto",
+                    background: "#0f1115",
+                    padding: 18,
+                    overscrollBehavior: "contain",
+                    WebkitOverflowScrolling: "touch",
+                    scrollbarGutter: "stable",
+                  }}
+                >
+                  <div
+                    style={{
+                      minHeight: "100%",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {viewerError ? (
+                      <div
+                        className="alert alert-warning"
+                        style={{
+                          width: "min(640px, 100%)",
+                          margin: "auto",
+                        }}
+                      >
+                        <div className="fw-semibold">Document preview unavailable</div>
+                        <div className="small">{viewerError}</div>
+                      </div>
+                    ) : viewerUrls && viewerUrls.length > 1 ? (
+                      <div
+                        style={{
+                          width: "100%",
+                          maxWidth: 1100,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 18,
+                        }}
+                      >
+                        {viewerUrls.map((u, idx) => (
+                          <div
+                            key={`${u}-${idx}`}
+                            style={{
+                              width: "100%",
+                              display: "flex",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={u}
+                              alt={`Page ${idx + 1}`}
+                              style={{
+                                display: "block",
+                                width: "auto",
+                                maxWidth: "100%",
+                                height: "auto",
+                                maxHeight: "none",
+                                objectFit: "contain",
+                                background: "#ffffff",
+                                borderRadius: 10,
+                                boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+                              }}
+                            />
+                          </div>
                         ))}
-                      </ul>
+                      </div>
+                    ) : viewerUrl ? (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          minHeight: "100%",
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {viewerUrl.toLowerCase().includes(".png") ||
+                        viewerUrl.toLowerCase().includes(".jpg") ||
+                        viewerUrl.toLowerCase().includes(".jpeg") ||
+                        viewerDoc?.mimeType?.toLowerCase().startsWith("image/") ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={viewerUrl}
+                            alt={viewerDoc?.originalName || "Medical document"}
+                            style={{
+                              display: "block",
+                              width: "auto",
+                              maxWidth: "100%",
+                              height: "auto",
+                              objectFit: "contain",
+                              alignSelf: "flex-start",
+                              background: "#ffffff",
+                              borderRadius: 10,
+                              boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+                            }}
+                          />
+                        ) : (
+                          <iframe
+                            src={`${viewerUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                            title="Document Viewer"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              minHeight: 620,
+                              border: "none",
+                              borderRadius: 10,
+                              background: "#ffffff",
+                              boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+                            }}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        className="text-white-50 small"
+                        style={{
+                          margin: "auto",
+                          color: "rgba(255,255,255,0.65)",
+                        }}
+                      >
+                        Loading document...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: information */}
+                <div
+                  style={{
+                    minWidth: 0,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    padding: 22,
+                    background: "#ffffff",
+                    borderLeft: "1px solid #e5e7eb",
+                    overscrollBehavior: "contain",
+                    scrollbarGutter: "stable",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      marginBottom: 14,
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "#0d9488",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        Document Information
+                      </div>
+                      <h3
+                        style={{
+                          margin: "3px 0 0",
+                          fontSize: 18,
+                          lineHeight: 1.2,
+                          fontWeight: 700,
+                          color: "#111827",
+                        }}
+                      >
+                        Extracted Information
+                      </h3>
                     </div>
-                  )}
-                  {Array.isArray(viewerDoc?.vitals) && viewerDoc.vitals.length > 0 ? (
-                    <div className="mb-3">
-                      <div className="fw-semibold mb-1">Vitals</div>
-                      <div className="table-responsive">
-                        <table className="table table-sm">
-                          <thead><tr><th>Label</th><th>Value</th><th>Unit</th></tr></thead>
+                  </div>
+
+                  {(() => {
+                    const s = summarizeToObject(
+                      viewerDoc?.summary_full ?? viewerDoc?.summary,
+                    );
+                    return (
+                      <div
+                        className="alert alert-warning"
+                        style={{
+                          fontSize: 12,
+                          lineHeight: 1.55,
+                          borderRadius: 12,
+                          marginBottom: 16,
+                        }}
+                      >
+                        {s.disclaimer}
+                      </div>
+                    );
+                  })()}
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr)",
+                      gap: 10,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div className="small">
+                      <span className="text-muted">Type</span>
+                      <div className="fw-semibold text-dark">
+                        {viewerDoc?.docType || "—"}
+                      </div>
+                    </div>
+
+                    <div className="small">
+                      <span className="text-muted">Patient Name</span>
+                      <div className="fw-semibold text-dark">
+                        {viewerDoc?.patient_name || "—"}
+                      </div>
+                    </div>
+
+                    <div className="small">
+                      <span className="text-muted">Date of Birth</span>
+                      <div className="fw-semibold text-dark">
+                        {viewerDoc?.dob || "—"}
+                      </div>
+                    </div>
+
+                    <div className="small">
+                      <span className="text-muted">Doctor Name</span>
+                      <div className="fw-semibold text-dark">
+                        {viewerDoc?.doctorName || viewerDoc?.doctor_name || "—"}
+                      </div>
+                    </div>
+
+                    <div className="small">
+                      <span className="text-muted">Diagnosis</span>
+                      <div className="fw-semibold text-dark">
+                        {viewerDoc?.diagnosis || "No explicit diagnosis recorded"}
+                      </div>
+                    </div>
+
+                    <div className="small">
+                      <span className="text-muted">Report Date</span>
+                      <div className="fw-semibold text-dark">
+                        {viewerDoc?.report_date || "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {Array.isArray(viewerDoc?.medications) &&
+                    viewerDoc.medications.length > 0 && (
+                      <div
+                        style={{
+                          padding: 14,
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 14,
+                          marginBottom: 14,
+                          background: "#fafafa",
+                        }}
+                      >
+                        <div className="fw-semibold mb-2">Medications</div>
+                        <ul className="small mb-0">
+                          {viewerDoc.medications.map((m: any, idx: number) => (
+                            <li key={idx}>
+                              {[m?.name, m?.dose, m?.frequency]
+                                .filter(Boolean)
+                                .join(" ") || "Medication"}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                  {Array.isArray(viewerDoc?.vitals) &&
+                  viewerDoc.vitals.length > 0 ? (
+                    <div style={{ marginBottom: 16 }}>
+                      <div className="fw-semibold mb-2">Vitals</div>
+                      <div
+                        className="table-responsive"
+                        style={{
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 12,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <table className="table table-sm mb-0">
+                          <thead>
+                            <tr>
+                              <th>Label</th>
+                              <th>Value</th>
+                              <th>Unit</th>
+                            </tr>
+                          </thead>
                           <tbody>
-                            {/* Improved deduplication: by label+value+unit, merge advice/explanation if present */}
                             {(() => {
                               const seen = new Map();
-                              // Iterate in reverse to keep latest
-                              [...viewerDoc.vitals].reverse().forEach((v:any) => {
-                                const key = [
-                                  (v.label || '').toLowerCase().trim(),
-                                  String(v.value ?? '').toLowerCase().trim(),
-                                  (v.unit || '').toLowerCase().trim()
-                                ].join('|');
-                                if (key && !seen.has(key)) {
-                                  seen.set(key, { ...v });
-                                } else if (key && seen.has(key)) {
-                                  // Merge advice/explanation if missing in the kept one
-                                  const existing = seen.get(key);
-                                  if (!existing.advice && v.advice) existing.advice = v.advice;
-                                  if (!existing.explanation && v.explanation) existing.explanation = v.explanation;
-                                }
-                              });
-                              return Array.from(seen.values()).reverse().map((v:any, i:number) => (
-                                <tr key={i}><td>{v.label || ''}</td><td>{String(v.value ?? '')}</td><td>{v.unit || '-'}</td></tr>
-                              ));
+
+                              [...viewerDoc.vitals]
+                                .reverse()
+                                .forEach((v: any) => {
+                                  const key = [
+                                    (v.label || "").toLowerCase().trim(),
+                                    String(v.value ?? "").toLowerCase().trim(),
+                                    (v.unit || "").toLowerCase().trim(),
+                                  ].join("|");
+
+                                  if (key && !seen.has(key)) {
+                                    seen.set(key, { ...v });
+                                  } else if (key && seen.has(key)) {
+                                    const existing = seen.get(key);
+                                    if (!existing.advice && v.advice) {
+                                      existing.advice = v.advice;
+                                    }
+                                    if (
+                                      !existing.explanation &&
+                                      v.explanation
+                                    ) {
+                                      existing.explanation = v.explanation;
+                                    }
+                                  }
+                                });
+
+                              return Array.from(seen.values())
+                                .reverse()
+                                .map((v: any, i: number) => (
+                                  <tr key={i}>
+                                    <td>{v.label || ""}</td>
+                                    <td>{String(v.value ?? "")}</td>
+                                    <td>{v.unit || "-"}</td>
+                                  </tr>
+                                ));
                             })()}
                           </tbody>
                         </table>
                       </div>
                     </div>
-                  ) : (viewerAnalysis?.classification?.observations && viewerAnalysis.classification.observations.length > 0 && (
-                    <div className="mb-3">
-                      <div className="fw-semibold mb-1">Observations</div>
-                      <div className="table-responsive">
-                        <table className="table table-sm">
-                          <thead><tr><th>Name</th><th>Value</th><th>Unit</th></tr></thead>
-                          <tbody>
-                            {viewerAnalysis.classification.observations.map((o:any, i:number)=> (
-                              <tr key={i}><td>{o.name}</td><td>{String(o.value)}</td><td>{o.unit || ''}</td></tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  ) : (
+                    viewerAnalysis?.classification?.observations &&
+                    viewerAnalysis.classification.observations.length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div className="fw-semibold mb-2">Observations</div>
+                        <div
+                          className="table-responsive"
+                          style={{
+                            border: "1px solid #e5e7eb",
+                            borderRadius: 12,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <table className="table table-sm mb-0">
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th>Unit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {viewerAnalysis.classification.observations.map(
+                                (o: any, i: number) => (
+                                  <tr key={i}>
+                                    <td>{o.name}</td>
+                                    <td>{String(o.value)}</td>
+                                    <td>{o.unit || ""}</td>
+                                  </tr>
+                                ),
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
+
                   {(() => {
-                    const s = summarizeToObject(viewerDoc?.summary_full ?? viewerDoc?.summary);
-                    const hasSummary = s.in_depth_summary || s.key_findings.length > 0 || s.recommendations.length > 0;
+                    const s = summarizeToObject(
+                      viewerDoc?.summary_full ?? viewerDoc?.summary,
+                    );
+                    const hasSummary =
+                      s.in_depth_summary ||
+                      s.key_findings.length > 0 ||
+                      s.recommendations.length > 0;
+
                     return (
-                      <div className="mb-3">
-                        <div className="d-flex align-items-center justify-content-between mb-1">
+                      <div style={{ paddingBottom: 12 }}>
+                        <div className="d-flex align-items-center justify-content-between mb-2 gap-2">
                           <div className="fw-semibold">Summary</div>
-                          <button 
+
+                          <button
+                            type="button"
                             className="btn btn-sm d-inline-flex align-items-center gap-1"
-                            style={{ background: "#81102A", color: "white" }}
+                            style={{
+                              background: "#81102A",
+                              color: "white",
+                              borderRadius: 10,
+                              whiteSpace: "nowrap",
+                            }}
                             disabled={summaryLoading}
                             onClick={async () => {
                               try {
                                 setSummaryLoading(true);
-                                // Fetch OCR text if available
-                                const ocrCol = viewerDoc?.versionId ? `${viewerDoc.id}:${viewerDoc.versionId}` : null;
-                                let rawText = '';
+
+                                const ocrCol = viewerDoc?.versionId
+                                  ? `${viewerDoc.id}:${viewerDoc.versionId}`
+                                  : null;
+
+                                let rawText = "";
+
                                 if (ocrCol) {
                                   try {
-                                    const ocrRes = await fetch(`/api/ocr?id=${ocrCol}`);
+                                    const ocrRes = await fetch(
+                                      `/api/ocr?id=${ocrCol}`,
+                                    );
+
                                     if (ocrRes.ok) {
                                       const ocrData = await ocrRes.json();
-                                      rawText = ocrData?.text || '';
+                                      rawText = ocrData?.text || "";
                                     }
                                   } catch {}
                                 }
-                                
+
                                 const structured = {
                                   patient_name: viewerDoc?.patient_name,
                                   dob: viewerDoc?.dob,
-                                  doctor_name: viewerDoc?.doctorName,
+                                  doctor_name:
+                                    viewerDoc?.doctorName ||
+                                    viewerDoc?.doctor_name,
                                   diagnosis: viewerDoc?.diagnosis,
                                   medications: viewerDoc?.medications || [],
                                   vitals: viewerDoc?.vitals || [],
                                   summary: viewerDoc?.summary,
-                                  classification: viewerDoc?.classification || viewerDoc?.metadata?.classification,
+                                  classification:
+                                    viewerDoc?.classification ||
+                                    viewerDoc?.metadata?.classification,
                                   raw_text: rawText,
                                 };
-                                const res = await fetch('/api/documents/fast-summarize', {
-                                  method: 'POST',
-                                  headers: { 'content-type': 'application/json' },
-                                  body: JSON.stringify({ documentId: viewerDoc?.id, structured })
-                                });
+
+                                const res = await fetch(
+                                  "/api/documents/fast-summarize",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "content-type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      documentId: viewerDoc?.id,
+                                      structured,
+                                    }),
+                                  },
+                                );
+
                                 if (res.ok) {
                                   const data = await res.json();
-                                  setViewerDoc((prev: any) => ({ ...prev, summary_full: data.summary }));
-                                  // Also refresh the documents list so that reopening the viewer
-                                  // always uses the latest persisted summary from the backend.
-                                  await refreshDocuments('active');
+
+                                  setViewerDoc((prev: any) => ({
+                                    ...prev,
+                                    summary_full: data.summary,
+                                  }));
+
+                                  await refreshDocuments("active");
                                 } else {
-                                  const data = await res.json().catch(() => ({}));
-                                  setError(data?.error || 'Summary generation failed');
+                                  const data = await res
+                                    .json()
+                                    .catch(() => ({}));
+
+                                  setError(
+                                    data?.error ||
+                                      "Summary generation failed",
+                                  );
                                 }
                               } catch (e) {
-                                console.error('Summary generation failed:', e);
-                                setError(e instanceof Error ? e.message : 'Summary generation failed');
+                                console.error(
+                                  "Summary generation failed:",
+                                  e,
+                                );
+                                setError(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "Summary generation failed",
+                                );
                               } finally {
                                 setSummaryLoading(false);
                               }
                             }}
                           >
                             {summaryLoading && (
-                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                              <span
+                                className="spinner-border spinner-border-sm"
+                                role="status"
+                                aria-hidden="true"
+                              />
                             )}
-                            <span>{hasSummary ? '🔄 Generate In-Depth Summary' : '✨ Generate Summary'}</span>
+                            <span>
+                              {hasSummary
+                                ? "🔄 Generate In-Depth Summary"
+                                : "✨ Generate Summary"}
+                            </span>
                           </button>
                         </div>
+
                         {s.in_depth_summary && (
-                          <div className="mb-2">
-                            <div className="fw-semibold">In-Depth Summary</div>
-                            <div className="small" style={{ whiteSpace: 'pre-wrap' }}>{s.in_depth_summary}</div>
+                          <div className="mb-3">
+                            <div className="fw-semibold mb-1">
+                              In-Depth Summary
+                            </div>
+                            <div
+                              className="small"
+                              style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                            >
+                              {s.in_depth_summary}
+                            </div>
                           </div>
                         )}
+
                         {s.key_findings.length > 0 && (
-                          <div className="mb-2">
-                            <div className="fw-semibold">Key Findings</div>
+                          <div className="mb-3">
+                            <div className="fw-semibold mb-1">
+                              Key Findings
+                            </div>
                             <ul className="small mb-0">
-                              {s.key_findings.map((k:string, i:number)=>(<li key={i}>{k}</li>))}
+                              {s.key_findings.map(
+                                (k: string, i: number) => (
+                                  <li key={i}>{k}</li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
+
                         {s.recommendations.length > 0 && (
-                          <div className="mb-2">
-                            <div className="fw-semibold">Recommendations</div>
+                          <div className="mb-3">
+                            <div className="fw-semibold mb-1">
+                              Recommendations
+                            </div>
                             <ul className="small mb-0">
-                              {s.recommendations.map((k:string, i:number)=>(<li key={i}>{k}</li>))}
+                              {s.recommendations.map(
+                                (k: string, i: number) => (
+                                  <li key={i}>{k}</li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
+
                         {s.possible_follow_ups.length > 0 && (
-                          <div className="mb-2">
-                            <div className="fw-semibold">Possible Follow-Ups</div>
+                          <div className="mb-3">
+                            <div className="fw-semibold mb-1">
+                              Possible Follow-Ups
+                            </div>
                             <ul className="small mb-0">
-                              {s.possible_follow_ups.map((k:string, i:number)=>(<li key={i}>{k}</li>))}
+                              {s.possible_follow_ups.map(
+                                (k: string, i: number) => (
+                                  <li key={i}>{k}</li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
+
                         {s.lifestyle_advice.length > 0 && (
                           <div className="mb-2">
-                            <div className="fw-semibold">Lifestyle Advice</div>
+                            <div className="fw-semibold mb-1">
+                              Lifestyle Advice
+                            </div>
                             <ul className="small mb-0">
-                              {s.lifestyle_advice.map((k:string, i:number)=>(<li key={i}>{k}</li>))}
+                              {s.lifestyle_advice.map(
+                                (k: string, i: number) => (
+                                  <li key={i}>{k}</li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         )}
-                        {!s.in_depth_summary && s.key_findings.length === 0 && s.recommendations.length === 0 && (
-                          <div className="small text-muted">Pending…</div>
-                        )}
+
+                        {!s.in_depth_summary &&
+                          s.key_findings.length === 0 &&
+                          s.recommendations.length === 0 && (
+                            <div className="small text-muted">
+                              Pending…
+                            </div>
+                          )}
                       </div>
                     );
                   })()}
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
+        )
       </div>
 
       {confirmDeleteIds && (
