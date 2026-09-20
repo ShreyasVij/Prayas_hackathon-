@@ -11,10 +11,13 @@ import {
   getActiveTokensForProfile,
   regenerateToken,
   markTokenPrinted,
+  revokeToken,
+  revokeAllActiveTokensForProfile,
 } from '@/../../packages/db';
 import type { UserDocument } from '@/../../packages/db/users';
 import type { ProfileDocument } from '@/../../packages/db/profiles';
 import { getDbClient } from '@/lib/server/db';
+import { resolveBaseUrl } from '@/lib/utils/url';
 
 // Rate limiting map (in-memory, use Redis in production)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -47,7 +50,20 @@ function getClientInfo(req: NextRequest) {
 export async function POST(req: NextRequest) {
   // ── DRY RUN ────────────────────────────────────────────────────────────────
   if (DRY_RUN) {
-    return NextResponse.json(MOCK_EMERGENCY_TOKEN);
+    const baseUrl = resolveBaseUrl(req);
+    const mockUrl = `${baseUrl}/emergency/dry-run-token-abc123`;
+    const mockQr = await QRCode.toDataURL(mockUrl, {
+      errorCorrectionLevel: 'H',
+      margin: 2,
+      width: 400,
+    }).catch(() => MOCK_EMERGENCY_TOKEN.qrCode);
+
+    return NextResponse.json({
+      ...MOCK_EMERGENCY_TOKEN,
+      url: mockUrl,
+      qrCode: mockQr,
+      isPermanent: true,
+    });
   }
   // ───────────────────────────────────────────────────────────────────────────
   try {
@@ -69,7 +85,7 @@ export async function POST(req: NextRequest) {
     const usersCollection = db.collection<UserDocument>('users');
     const user = await usersCollection.findOne({ email: authUser.email });
     
-    if (!authUser) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -85,25 +101,23 @@ export async function POST(req: NextRequest) {
     }
     
     // Get body
-    const body = await req.json();
-    const { profileId, regenerate = false, oldToken = null } = body;
-    
-    if (!profileId) {
-      return NextResponse.json(
-        { error: 'profileId is required' },
-        { status: 400 }
-      );
-    }
+    const body = await req.json().catch(() => ({}));
+    const { regenerate = false, oldToken = null } = body;
+    const profileId = body.profileId || user._id.toString();
     
     // Validate profileId (which is actually the user's ID in this system)
     let profileObjectId: ObjectId;
     try {
       profileObjectId = new ObjectId(profileId);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid profileId' },
-        { status: 400 }
-      );
+      if (user._id) {
+        profileObjectId = user._id;
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid profileId' },
+          { status: 400 }
+        );
+      }
     }
     
     // Verify the profileId matches the user's ID (since profiles are embedded in users)
@@ -111,14 +125,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Profile not found or access denied' },
         { status: 403 }
-      );
-    }
-    
-    // Check if user has required profile data
-    if (!user.profile) {
-      return NextResponse.json(
-        { error: 'Please complete your profile before generating emergency tokens' },
-        { status: 400 }
       );
     }
     
@@ -131,23 +137,39 @@ export async function POST(req: NextRequest) {
       .update(token)
       .digest('hex');
     
+    // Resolve dynamic environment-aware base URL
+    const baseUrl = resolveBaseUrl(req);
+    const emergencyUrl = `${baseUrl}/emergency/${token}`;
+
     let tokenId: ObjectId;
     
-    // If regenerating, revoke old token and create new one
-    if (regenerate && oldToken) {
-      const oldTokenHash = crypto
-        .createHash('sha256')
-        .update(oldToken)
-        .digest('hex');
-      
-      const newTokenId = await regenerateToken(oldTokenHash, tokenHash, user._id);
-      
-      if (!newTokenId) {
-        return NextResponse.json(
-          { error: 'Failed to regenerate token' },
-          { status: 400 }
-        );
+    // If regenerating or oldToken provided, revoke previous token
+    if (regenerate || oldToken) {
+      if (oldToken) {
+        const oldTokenHash = crypto
+          .createHash('sha256')
+          .update(oldToken)
+          .digest('hex');
+        await revokeToken(oldTokenHash);
+        await revokeToken(oldToken);
       }
+      if (regenerate) {
+        await revokeAllActiveTokensForProfile(profileObjectId.toString());
+      }
+      
+      const newTokenId = await createEmergencyToken(
+        user._id,
+        profileObjectId,
+        tokenHash,
+        true, // isPermanent standard
+        {
+          createdIp: ip,
+          createdUserAgent: userAgent,
+          token,
+          url: emergencyUrl,
+          regenerated: true,
+        }
+      );
       
       tokenId = newTokenId;
       
@@ -162,7 +184,7 @@ export async function POST(req: NextRequest) {
         {
           tokenId: tokenId.toString(),
           regenerated: true,
-          oldTokenHash,
+          oldToken,
         }
       );
     } else {
@@ -171,8 +193,13 @@ export async function POST(req: NextRequest) {
         user._id,
         profileObjectId,
         tokenHash,
-        true, // isPermanent
-        { createdIp: ip, createdUserAgent: userAgent }
+        true, // isPermanent standard
+        {
+          createdIp: ip,
+          createdUserAgent: userAgent,
+          token,
+          url: emergencyUrl,
+        }
       );
       
       // Log action
@@ -190,13 +217,7 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Generate QR code
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
-    if (!baseUrl) {
-      throw new Error('Base URL not configured');
-    }
-    const emergencyUrl = `${baseUrl}/emergency/${token}`;
-    
+    // Generate QR code using environment-aware base URL
     const qrCode = await QRCode.toDataURL(emergencyUrl, {
       errorCorrectionLevel: 'H',
       margin: 2,
@@ -210,7 +231,8 @@ export async function POST(req: NextRequest) {
       qrCode,
       url: emergencyUrl,
       isPermanent: true,
-      regenerated: regenerate,
+      regenerated: Boolean(regenerate || oldToken),
+      createdAt: new Date().toISOString(),
       warning: 'This QR code is long-lived and reusable. You can print it for wallet cards or bracelets. Regenerate to revoke the old QR.',
     });
     
@@ -223,11 +245,29 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET endpoint to list active tokens
+// GET endpoint to list active tokens and resume active permanent token
 export async function GET(req: NextRequest) {
   // ── DRY RUN ──────────────────────────────────────────────────────────────
   if (DRY_RUN) {
-    return NextResponse.json({ success: true, tokens: MOCK_ACTIVE_TOKENS });
+    const baseUrl = resolveBaseUrl(req);
+    const mockUrl = `${baseUrl}/emergency/dry-run-token-abc123`;
+    const mockQr = await QRCode.toDataURL(mockUrl, {
+      errorCorrectionLevel: 'H',
+      margin: 2,
+      width: 400,
+    }).catch(() => MOCK_EMERGENCY_TOKEN.qrCode);
+
+    return NextResponse.json({
+      success: true,
+      tokens: MOCK_ACTIVE_TOKENS,
+      activeToken: {
+        token: 'dry-run-token-abc123',
+        tokenId: 'dry-run-token-id-001',
+        qrCode: mockQr,
+        url: mockUrl,
+        isPermanent: true,
+      },
+    });
   }
   // ─────────────────────────────────────────────────────────────────────────
   try {
@@ -245,7 +285,7 @@ export async function GET(req: NextRequest) {
     const usersCollection = db.collection<UserDocument>('users');
     const user = await usersCollection.findOne({ email: authUser.email });
     
-    if (!authUser) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -253,48 +293,71 @@ export async function GET(req: NextRequest) {
     }
     
     const { searchParams } = new URL(req.url);
-    const profileId = searchParams.get('profileId');
-    
-    if (!profileId) {
-      return NextResponse.json(
-        { error: 'profileId is required' },
-        { status: 400 }
-      );
-    }
+    const profileId = searchParams.get('profileId') || user._id.toString();
     
     let profileObjectId: ObjectId;
     try {
       profileObjectId = new ObjectId(profileId);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid profileId' },
-        { status: 400 }
-      );
+      profileObjectId = user._id;
     }
     
-    // Verify the profileId matches the user's ID (since profiles are embedded in users)
+    // Verify the profileId matches the user's ID
     if (!user._id.equals(profileObjectId)) {
       return NextResponse.json(
         { error: 'Profile not found or access denied' },
         { status: 403 }
       );
     }
-    
-    const activeTokens = await getActiveTokensForProfile(profileObjectId.toString());
+    const activeTokens = await getActiveTokensForProfile(profileObjectId);
+    const baseUrl = resolveBaseUrl(req);
+
+    // Retrieve active permanent token details for instant settings resumption
+    let activeTokenData: {
+      token: string;
+      tokenId: string;
+      qrCode: string;
+      url: string;
+      isPermanent: boolean;
+    } | null = null;
+
+    if (activeTokens && activeTokens.length > 0) {
+      const active = activeTokens[0];
+      const rawToken = active.metadata?.token || active.token;
+      if (rawToken) {
+        const url = active.metadata?.url || `${baseUrl}/emergency/${rawToken}`;
+        let qrCode = active.metadata?.qrCode;
+        if (!qrCode) {
+          qrCode = await QRCode.toDataURL(url, {
+            errorCorrectionLevel: 'H',
+            margin: 2,
+            width: 400,
+          }).catch(() => '');
+        }
+        activeTokenData = {
+          token: rawToken,
+          tokenId: active._id?.toString() || active.id || active.tokenId,
+          qrCode,
+          url,
+          isPermanent: active.isPermanent !== false,
+        };
+      }
+    }
     
     // Return sanitized tokens (no hash)
     const sanitizedTokens = activeTokens.map(t => ({
-      id: t._id?.toString(),
+      id: t._id?.toString() || t.id,
       createdAt: t.createdAt,
       lastAccessedAt: t.lastAccessedAt,
-      accessCount: t.accessCount,
-      isPermanent: t.isPermanent,
-      revoked: t.revoked,
+      accessCount: t.accessCount || 0,
+      isPermanent: t.isPermanent !== false,
+      revoked: Boolean(t.revoked),
     }));
     
     return NextResponse.json({
       success: true,
       tokens: sanitizedTokens,
+      activeToken: activeTokenData,
     });
     
   } catch (error) {

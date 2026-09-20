@@ -111,8 +111,8 @@ export const MOCK_EMERGENCY_TOKEN = {
   token: 'dry-run-token-abc123',
   tokenId: 'dry-run-token-id-001',
   qrCode: MOCK_QR_DATA_URL,
-  url: '/emergency/dry-run',
-  isPermanent: false,
+  url: '/emergency/dry-run-token-abc123',
+  isPermanent: true,
   regenerated: false,
   warning: '[DRY RUN] This is a mock emergency token.',
 };

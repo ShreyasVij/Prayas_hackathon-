@@ -128,3 +128,82 @@ create policy "Doctors can update medical records for review"
       where p.id = auth.uid() and p.role = 'doctor'
     )
   );
+
+-- ==========================================
+-- EMERGENCY TOKENS TABLE
+-- ==========================================
+create table if not exists public.emergency_tokens (
+  id uuid default gen_random_uuid() primary key,
+  profile_id uuid references public.profiles (id) on delete cascade not null,
+  user_id uuid references auth.users (id) on delete cascade,
+  token_hash text not null unique,
+  label text default 'Emergency QR Token',
+  is_permanent boolean default true not null,
+  revoked boolean default false not null,
+  access_count integer default 0 not null,
+  last_accessed_at timestamp with time zone,
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.emergency_tokens enable row level security;
+
+-- Policies for emergency_tokens:
+create policy "Users can view their own emergency tokens"
+  on public.emergency_tokens for select
+  using ( auth.uid() = user_id or auth.uid() = profile_id );
+
+create policy "Users can insert their own emergency tokens"
+  on public.emergency_tokens for insert
+  with check ( auth.uid() = user_id or auth.uid() = profile_id );
+
+create policy "Users can update their own emergency tokens"
+  on public.emergency_tokens for update
+  using ( auth.uid() = user_id or auth.uid() = profile_id );
+
+-- Public read for emergency token resolution (token_hash lookup)
+create policy "Public can verify active emergency tokens by hash"
+  on public.emergency_tokens for select
+  using ( true );
+
+-- Indexes on emergency_tokens
+create index if not exists emergency_tokens_hash_idx on public.emergency_tokens (token_hash);
+create index if not exists emergency_tokens_profile_idx on public.emergency_tokens (profile_id);
+
+-- ==========================================
+-- EMERGENCY ACCESS LOGS TABLE
+-- ==========================================
+create table if not exists public.emergency_access_logs (
+  id uuid default gen_random_uuid() primary key,
+  token_id uuid references public.emergency_tokens (id) on delete set null,
+  token_hash text not null,
+  ip text,
+  user_agent text,
+  location text,
+  coordinates jsonb,
+  metadata jsonb default '{}'::jsonb,
+  scanned_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.emergency_access_logs enable row level security;
+
+-- Public can insert access log on scan
+create policy "Public can insert emergency access logs"
+  on public.emergency_access_logs for insert
+  with check ( true );
+
+-- Token owner can view access logs for their tokens
+create policy "Users can view access logs for their emergency tokens"
+  on public.emergency_access_logs for select
+  using (
+    exists (
+      select 1 from public.emergency_tokens t
+      where t.id = emergency_access_logs.token_id
+      and (t.user_id = auth.uid() or t.profile_id = auth.uid())
+    )
+  );
+
+create index if not exists emergency_access_logs_token_id_idx on public.emergency_access_logs (token_id);
+create index if not exists emergency_access_logs_token_hash_idx on public.emergency_access_logs (token_hash);
+

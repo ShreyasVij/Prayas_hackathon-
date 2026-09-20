@@ -14,6 +14,22 @@ interface QRToken {
 }
 
 /**
+ * Normalizes legacy emergency URLs (e.g. /emergency/token/xyz or full domain URL)
+ * into canonical responder URL format (/emergency/xyz).
+ * Falls back to canonical live demo token when missing or blank.
+ */
+export function normalizeEmergencyUrl(rawUrl?: string): string {
+  if (!rawUrl || typeof rawUrl !== "string") {
+    return "/emergency/emg-live-8921-xyz";
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return "/emergency/emg-live-8921-xyz";
+  }
+  return trimmed.replace(/\/emergency\/token\//g, "/emergency/");
+}
+
+/**
  * EmergencyQRBox — compact dashboard card for the Emergency QR Code.
  * Always visible. Fetches or generates the user's emergency access token.
  * rose-600 accent is used ONLY for the emergency branding — nowhere else on the dashboard.
@@ -28,7 +44,7 @@ export function EmergencyQRBox() {
     token: "emg-live-8921-xyz",
     tokenId: "tok-emg-001",
     qrCode: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><rect x='10' y='10' width='25' height='25' fill='%23e11d48'/><rect x='65' y='10' width='25' height='25' fill='%23e11d48'/><rect x='10' y='65' width='25' height='25' fill='%23e11d48'/><rect x='15' y='15' width='15' height='15' fill='white'/><rect x='70' y='15' width='15' height='15' fill='white'/><rect x='15' y='70' width='15' height='15' fill='white'/><rect x='18' y='18' width='9' height='9' fill='%23e11d48'/><rect x='73' y='18' width='9' height='9' fill='%23e11d48'/><rect x='18' y='73' width='9' height='9' fill='%23e11d48'/><rect x='45' y='15' width='10' height='10' fill='%230f172a'/><rect x='45' y='35' width='10' height='10' fill='%230f172a'/><rect x='45' y='55' width='10' height='10' fill='%230f172a'/><rect x='45' y='75' width='10' height='10' fill='%230f172a'/><rect x='25' y='45' width='10' height='10' fill='%230f172a'/><rect x='65' y='45' width='10' height='10' fill='%230f172a'/><rect x='65' y='65' width='15' height='15' fill='%23e11d48'/><rect x='65' y='85' width='25' height='5' fill='%230f172a'/></svg>",
-    url: "/emergency/token/emg-live-8921-xyz",
+    url: "/emergency/emg-live-8921-xyz",
   };
 
   async function fetchExistingToken() {
@@ -38,6 +54,15 @@ export function EmergencyQRBox() {
       const res = await fetch("/api/emergency/token");
       if (res.ok) {
         const data = await res.json();
+        if (data.activeToken) {
+          setQrData({
+            token: data.activeToken.token,
+            tokenId: data.activeToken.tokenId,
+            qrCode: data.activeToken.qrCode || FALLBACK_QR.qrCode,
+            url: normalizeEmergencyUrl(data.activeToken.url || `/emergency/${data.activeToken.token}`),
+          });
+          return;
+        }
         if (data.success && Array.isArray(data.tokens) && data.tokens.length > 0) {
           const tokenId = data.tokens[0].id;
           await fetchQRForToken(tokenId);
@@ -62,7 +87,7 @@ export function EmergencyQRBox() {
           token: data.token || tokenId,
           tokenId: data.tokenId || tokenId,
           qrCode: data.qrCode || FALLBACK_QR.qrCode,
-          url: data.url || FALLBACK_QR.url,
+          url: normalizeEmergencyUrl(data.url || FALLBACK_QR.url),
         });
       } else {
         setQrData(FALLBACK_QR);
@@ -87,7 +112,7 @@ export function EmergencyQRBox() {
         token: data.token || "emg-live-token",
         tokenId: data.tokenId || "tok-001",
         qrCode: data.qrCode || FALLBACK_QR.qrCode,
-        url: data.url || FALLBACK_QR.url,
+        url: normalizeEmergencyUrl(data.url),
       });
     } catch {
       setQrData(FALLBACK_QR);
@@ -139,17 +164,16 @@ export function EmergencyQRBox() {
                 <RefreshCw className={cn("h-3 w-3", generating && "animate-spin")} />
                 Refresh
               </button>
-              {qrData.url && (
-                <Link
-                  href={qrData.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-rose-50 border border-rose-200 py-1.5 text-xs text-rose-700 font-medium hover:bg-rose-100 transition-colors no-underline"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Open
-                </Link>
-              )}
+              {/* href={qrData.url} */}
+              <Link
+                href={normalizeEmergencyUrl(qrData?.url || "/emergency/emg-live-8921-xyz")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-rose-50 border border-rose-200 py-1.5 text-xs text-rose-700 font-medium hover:bg-rose-100 transition-colors no-underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Open
+              </Link>
             </div>
           </>
         ) : (
