@@ -24,13 +24,13 @@ type StoredResult = {
 function extractHeatmap(value: unknown): string | null {
   if (!value || typeof value !== "object") return null;
   const obj = value as Record<string, unknown>;
-  // Check top-level heatmap_image
-  if (typeof obj.heatmap_image === "string" && obj.heatmap_image.length > 100) return obj.heatmap_image;
-  // Recurse one level (in case nested under result/data)
+  if (typeof obj.heatmap_image === "string" && obj.heatmap_image.length > 50) return obj.heatmap_image;
+  if (typeof obj.heatmap_url === "string" && (obj.heatmap_url.startsWith("http") || obj.heatmap_url.startsWith("data:"))) return obj.heatmap_url;
   for (const v of Object.values(obj)) {
     if (v && typeof v === "object") {
       const nested = v as Record<string, unknown>;
-      if (typeof nested.heatmap_image === "string" && nested.heatmap_image.length > 100) return nested.heatmap_image;
+      if (typeof nested.heatmap_image === "string" && nested.heatmap_image.length > 50) return nested.heatmap_image;
+      if (typeof nested.heatmap_url === "string" && (nested.heatmap_url.startsWith("http") || nested.heatmap_url.startsWith("data:"))) return nested.heatmap_url;
     }
   }
   return null;
@@ -144,8 +144,27 @@ export default function DiagnosticResultPage() {
 
   if (!result || !view) return <div className="min-h-[400px]" />;
 
+  function isNormalPrediction(pred?: string | null): boolean {
+    if (!pred) return false;
+    const p = pred.toLowerCase().trim().replace(/[-_]/g, " ");
+    return (
+      p === "normal" ||
+      p === "negative" ||
+      p === "no tumor" ||
+      p === "no disease" ||
+      p === "healthy" ||
+      p === "benign" ||
+      p === "non demented" ||
+      p.includes("normal") ||
+      p.includes("no acute") ||
+      p.includes("no signs") ||
+      p.includes("no findings") ||
+      p.startsWith("no ")
+    );
+  }
+
   const primaryLabel = view.prediction ? formatLabel(view.prediction) : "Prediction unavailable";
-  const isPositive = view.prediction?.toLowerCase() !== "normal" && view.prediction?.toLowerCase() !== "negative";
+  const isPositive = !isNormalPrediction(view.prediction);
 
   return (
     <div className="mx-auto max-w-6xl space-y-7 py-2">

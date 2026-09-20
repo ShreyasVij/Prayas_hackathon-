@@ -140,8 +140,27 @@ export default function DocumentScanResultPage() {
 
   if (!result || !view) return <div className="min-h-[400px]" />;
 
+  function isNormalPrediction(pred?: string | null): boolean {
+    if (!pred) return false;
+    const p = pred.toLowerCase().trim().replace(/[-_]/g, " ");
+    return (
+      p === "normal" ||
+      p === "negative" ||
+      p === "no tumor" ||
+      p === "no disease" ||
+      p === "healthy" ||
+      p === "benign" ||
+      p === "non demented" ||
+      p.includes("normal") ||
+      p.includes("no acute") ||
+      p.includes("no signs") ||
+      p.includes("no findings") ||
+      p.startsWith("no ")
+    );
+  }
+
   const primaryLabel = view.prediction ? formatLabel(view.prediction) : "Prediction unavailable";
-  const isPositive = view.prediction?.toLowerCase() !== "normal" && view.prediction?.toLowerCase() !== "negative";
+  const isPositive = !isNormalPrediction(view.prediction);
 
   return (
     <div className="mx-auto max-w-6xl space-y-7 py-2">

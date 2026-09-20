@@ -14,12 +14,36 @@ async function uploadHeatmapToStorage(
   userId: string,
 ): Promise<string | null> {
   try {
-    // Strip "data:image/jpeg;base64," prefix
-    const matches = base64DataUri.match(/^data:(image\/\w+);base64,(.+)$/);
-    if (!matches) return null;
-    const mimeType = matches[1];
-    const ext = mimeType.split("/")[1] || "jpg";
-    const base64Data = matches[2];
+    if (!base64DataUri) return null;
+    // Already an HTTP URL
+    if (base64DataUri.startsWith("http://") || base64DataUri.startsWith("https://")) {
+      return base64DataUri;
+    }
+
+    let mimeType = "image/jpeg";
+    let ext = "jpg";
+    let base64Data = base64DataUri;
+
+    const matches = base64DataUri.match(/^data:([^;]+);base64,(.+)$/);
+    if (matches) {
+      mimeType = matches[1];
+      ext = mimeType.includes("svg") ? "svg" : mimeType.split("/")[1] || "jpg";
+      base64Data = matches[2];
+    } else if (base64DataUri.startsWith("data:image/svg+xml")) {
+      // SVG without base64 encoding (e.g. data:image/svg+xml;utf8,<svg...)
+      const svgContent = decodeURIComponent(base64DataUri.replace(/^data:image\/svg\+xml;?(utf8)?,/, ""));
+      const buffer = Buffer.from(svgContent, "utf8");
+      const storageKey = `heatmaps/${userId}/${Date.now()}-heatmap.svg`;
+      const { error } = await supabaseAdmin.storage
+        .from("medilocker")
+        .upload(storageKey, buffer, { contentType: "image/svg+xml", upsert: false });
+      if (error) {
+        console.warn("SVG Heatmap upload error:", error.message);
+        return null;
+      }
+      const { data: pubUrl } = supabaseAdmin.storage.from("medilocker").getPublicUrl(storageKey);
+      return pubUrl.publicUrl || null;
+    }
 
     // Convert base64 to Buffer
     const buffer = Buffer.from(base64Data, "base64");
@@ -142,15 +166,26 @@ export async function POST(req: Request) {
       try {
         aiPrediction = JSON.parse(predictionRaw);
 
-        // 2. Extract and upload heatmap_image to storage (don't store large base64 in DB)
-        if (aiPrediction?.heatmap_image && typeof aiPrediction.heatmap_image === "string") {
-          heatmapUrl = await uploadHeatmapToStorage(aiPrediction.heatmap_image, user.id);
-          // Remove base64 from stored JSON to keep DB lean — store URL instead
-          const { heatmap_image: _stripped, ...predWithoutHeatmap } = aiPrediction;
-          aiPrediction = {
-            ...predWithoutHeatmap,
-            heatmap_url: heatmapUrl || undefined,
-          };
+        // 2. Extract and upload heatmap_image to storage
+        const rawHeatmap = aiPrediction?.heatmap_image || aiPrediction?.heatmap_url || null;
+        if (rawHeatmap && typeof rawHeatmap === "string") {
+          heatmapUrl = await uploadHeatmapToStorage(rawHeatmap, user.id);
+          if (heatmapUrl) {
+            // Upload succeeded: store URL in JSON and column, remove raw base64 to keep DB lean
+            const { heatmap_image: _stripped, ...predWithoutHeatmap } = aiPrediction;
+            aiPrediction = {
+              ...predWithoutHeatmap,
+              heatmap_url: heatmapUrl,
+            };
+          } else {
+            // Fallback: keep heatmap in JSON if storage upload fails
+            aiPrediction = {
+              ...aiPrediction,
+              heatmap_url: rawHeatmap,
+              heatmap_image: rawHeatmap,
+            };
+            heatmapUrl = rawHeatmap.length < 2000 ? rawHeatmap : null;
+          }
         }
       } catch {
         aiPrediction = { raw: predictionRaw };
