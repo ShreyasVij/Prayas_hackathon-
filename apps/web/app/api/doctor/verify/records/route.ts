@@ -139,6 +139,7 @@ export async function GET(req: Request) {
         document_type: rec.document_type,
         disease_id: rec.disease_id,
         ai_prediction: rec.ai_prediction,
+        heatmap_url: rec.heatmap_url || rec.ai_prediction?.heatmap_url || rec.ai_prediction?.heatmap_image || null,
         status: rec.status,
         created_at: rec.created_at,
         patient: {

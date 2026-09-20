@@ -126,10 +126,12 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
       setProgressPercent(85);
       setAnalysisStep("Storing scan to medical vault and queueing doctor review...");
 
+      const targetDisease = payload?.disease || payload?.disease_id || diseaseId;
+
       // Persist scan file and AI prediction into medical_records table and Supabase storage
       try {
         const persistData = new FormData();
-        persistData.append("disease_id", diseaseId);
+        persistData.append("disease_id", targetDisease);
         persistData.append("file", selectedFile);
         persistData.append("ai_prediction", JSON.stringify(payload));
         const persistRes = await fetch("/api/patient/diagnostics", {
@@ -145,33 +147,34 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
         } else if (previewUrl) {
           sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
         }
-        // Store heatmap URL (persistent Supabase URL, NOT the raw base64)
+        // Store heatmap URL (persistent Supabase URL, or base64 fallback)
         const storedHeatmapUrl =
           persistPayload?.heatmap_url ||
           persistPayload?.record?.heatmap_url ||
           persistPayload?.record?.ai_prediction?.heatmap_url ||
+          payload?.heatmap_image ||
           null;
         if (storedHeatmapUrl) {
           sessionStorage.setItem("diagnosticHeatmapUrl", storedHeatmapUrl);
-        } else if (payload?.heatmap_image) {
-          // Fallback: store the raw base64 in session if upload failed
-          sessionStorage.setItem("diagnosticHeatmapUrl", payload.heatmap_image);
+        } else {
+          sessionStorage.removeItem("diagnosticHeatmapUrl");
         }
       } catch (saveErr) {
         console.warn("Medical record persistence warning:", saveErr);
         if (previewUrl) {
           sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
         }
-        // Fallback heatmap from payload
         if (payload?.heatmap_image) {
           sessionStorage.setItem("diagnosticHeatmapUrl", payload.heatmap_image);
+        } else {
+          sessionStorage.removeItem("diagnosticHeatmapUrl");
         }
       }
 
       setProgressPercent(100);
       setAnalysisStep("Analysis complete.");
       sessionStorage.setItem("diagnosticResult", JSON.stringify({
-        diseaseId,
+        diseaseId: targetDisease,
         response: payload,
         analyzedAt: new Date().toISOString(),
         fileName: selectedFile.name,

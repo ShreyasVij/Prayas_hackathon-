@@ -22,6 +22,7 @@ type MedicalRecord = {
   patient_id: string;
   patient_masked_id: string;
   document_url: string;
+  heatmap_url?: string | null;
   document_type: string;
   disease_id: string;
   ai_prediction: any;
@@ -301,11 +302,19 @@ export default function VerifyDiagnosticsPage() {
                     </h4>
                     {/* Detect heatmap from dedicated column or ai_prediction */}
                     {(() => {
-                      const hm =
-                        (record as any).heatmap_url ||
-                        prediction?.heatmap_url ||
-                        prediction?.heatmap_image ||
-                        null;
+                      const isNormalRecord =
+                        (prediction?.primary_prediction && String(prediction.primary_prediction).toUpperCase() === "NORMAL") ||
+                        (typeof prediction?.prediction === "string" && prediction.prediction.toLowerCase().includes("normal")) ||
+                        prediction?.status === "negative" ||
+                        (prediction?.primary_prediction && String(prediction.primary_prediction).toLowerCase().includes("nevi"));
+
+                      const hm = isNormalRecord
+                        ? null
+                        : ((record as any).heatmap_url ||
+                          prediction?.heatmap_url ||
+                          prediction?.heatmap_image ||
+                          null);
+
                       return hm ? (
                         <div className="space-y-1.5">
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Original · Grad-CAM Heatmap</p>
@@ -370,29 +379,41 @@ export default function VerifyDiagnosticsPage() {
                       <Activity className="h-3.5 w-3.5" /> Model Response Given to Patient
                     </h4>
                     
-                    <div className="bg-slate-50/90 rounded-xl p-4 border border-slate-200/90 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="text-[11px] font-semibold text-zinc-400 block">Automated AI Prediction</span>
-                          <span className="text-sm font-bold text-zinc-900 block mt-0.5">
-                            {prediction.prediction || prediction.status || 'Diagnostic evaluation complete'}
-                          </span>
-                        </div>
-                        {prediction.confidence !== undefined && (
-                          <span className="px-2 py-1 rounded-md bg-teal-50 border border-teal-200 text-teal-700 font-mono text-xs font-bold shrink-0">
-                            {typeof prediction.confidence === 'number' && prediction.confidence <= 1
-                              ? `${Math.round(prediction.confidence * 100)}% Conf.`
-                              : `${prediction.confidence}% Conf.`}
-                          </span>
-                        )}
-                      </div>
+                    {(() => {
+                      const isNormalRecord =
+                        (prediction?.primary_prediction && String(prediction.primary_prediction).toUpperCase() === "NORMAL") ||
+                        (typeof prediction?.prediction === "string" && prediction.prediction.toLowerCase().includes("normal")) ||
+                        prediction?.status === "negative" ||
+                        (prediction?.primary_prediction && String(prediction.primary_prediction).toLowerCase().includes("nevi"));
 
-                      {prediction.severity && (
-                        <div className="text-xs">
-                          <span className="text-zinc-500">Calculated Severity: </span>
-                          <span className="font-bold text-zinc-800">{prediction.severity}</span>
-                        </div>
-                      )}
+                      const displayPred = isNormalRecord
+                        ? (prediction.primary_prediction === "NORMAL" ? `Normal (No Signs of ${diseaseName})` : prediction.prediction)
+                        : (prediction.prediction || prediction.status || "Diagnostic evaluation complete");
+
+                      const displaySeverity = isNormalRecord ? "None / Normal" : (prediction.severity || "Moderate");
+
+                      return (
+                        <div className="bg-slate-50/90 rounded-xl p-4 border border-slate-200/90 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[11px] font-semibold text-zinc-400 block">Automated AI Prediction</span>
+                              <span className={cn("text-sm font-bold block mt-0.5", isNormalRecord ? "text-emerald-700" : "text-zinc-900")}>
+                                {displayPred}
+                              </span>
+                            </div>
+                            {prediction.confidence !== undefined && (
+                              <span className={cn("px-2 py-1 rounded-md border font-mono text-xs font-bold shrink-0", isNormalRecord ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-teal-50 border-teal-200 text-teal-700")}>
+                                {typeof prediction.confidence === 'number' && prediction.confidence <= 1
+                                  ? `${Math.round(prediction.confidence * 100)}% Conf.`
+                                  : `${prediction.confidence}% Conf.`}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-xs">
+                            <span className="text-zinc-500">Calculated Severity: </span>
+                            <span className={cn("font-bold", isNormalRecord ? "text-emerald-700" : "text-zinc-800")}>{displaySeverity}</span>
+                          </div>
 
                       {Array.isArray(prediction.key_findings) && prediction.key_findings.length > 0 && (
                         <div>
@@ -410,7 +431,9 @@ export default function VerifyDiagnosticsPage() {
                           "{prediction.recommendation}"
                         </div>
                       )}
-                    </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Below: Separate Physician Verification Section */}
