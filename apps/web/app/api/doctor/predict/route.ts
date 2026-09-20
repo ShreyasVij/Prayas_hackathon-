@@ -7,6 +7,14 @@ const SUPPORTED_DISEASES = new Set([
 ]);
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+/**
+ * Diseases that must always use the built-in heuristic engine.
+ * These diseases do NOT have a remote Colab/external model configured,
+ * so we skip the external endpoint call entirely to avoid any attempt
+ * to download model weights from Google Storage or other remote sources.
+ */
+const BUILTIN_ONLY_DISEASES = new Set(["heart_murmur"]);
+
 const DISEASE_LABELS: Record<string, { organ: string; modality: string; sampleFindings: string[] }> = {
   pneumonia: {
     organ: "Lungs / Thorax",
@@ -178,7 +186,7 @@ export async function POST(request: Request) {
       ""
     ).trim();
 
-    if (rawUrl) {
+    if (rawUrl && !BUILTIN_ONLY_DISEASES.has(diseaseId)) {
       try {
         const cleanUrl = rawUrl.replace(/\/+$/, "");
         // Support either base URL (https://xyz.ngrok-free.app) or direct endpoint (https://xyz.ngrok-free.app/predict)
