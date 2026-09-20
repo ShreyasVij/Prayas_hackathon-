@@ -14,6 +14,8 @@ export interface DoctorProfile {
   profileImageUrl?: string | null;
   profileImageName?: string | null;
   specialization?: string | null;
+  specialty?: string | null;
+  department?: string | null;
   experienceYears?: number | null;
   licenseNumber?: string | null;
   hospitalAffiliation?: string | null;

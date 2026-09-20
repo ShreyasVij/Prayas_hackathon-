@@ -1029,13 +1029,22 @@ export default function DocumentsPage() {
                         <div className="p-5 flex-1 space-y-4">
                           <div className="flex gap-4">
                             {/* Image Thumbnail */}
-                            <div className="w-24 h-24 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                            <div className="w-24 h-24 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative group">
                               {d.document_url ? (
-                                <img
-                                  src={d.document_url}
-                                  alt={d.disease_id}
-                                  className="w-full h-full object-contain"
-                                />
+                                <a
+                                  href={d.document_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Click to view full scan"
+                                  className="w-full h-full flex items-center justify-center"
+                                >
+                                  <img
+                                    src={d.document_url}
+                                    alt={d.disease_id}
+                                    className="w-full h-full object-contain hover:scale-105 transition-transform"
+                                    crossOrigin="anonymous"
+                                  />
+                                </a>
                               ) : (
                                 <span className="text-[10px] text-zinc-500 text-center px-1">Scan Image</span>
                               )}

@@ -12,7 +12,8 @@ import {
   Shield,
   Activity,
   Check,
-  Stethoscope
+  Stethoscope,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -298,13 +299,24 @@ export default function VerifyDiagnosticsPage() {
                     <h4 className="text-xs font-bold text-teal-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <FileImage className="h-3.5 w-3.5" /> Patient Uploaded Scan ({record.document_type})
                     </h4>
-                    <div className="bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800 aspect-square flex items-center justify-center relative">
+                    <div className="bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800 aspect-square flex items-center justify-center relative group">
                       {record.document_url ? (
-                        <img 
-                          src={record.document_url} 
-                          alt="Patient uploaded medical scan" 
-                          className="w-full h-full object-contain"
-                        />
+                        <>
+                          <img 
+                            src={record.document_url} 
+                            alt="Patient uploaded medical scan" 
+                            className="w-full h-full object-contain"
+                            crossOrigin="anonymous"
+                          />
+                          <a
+                            href={record.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/70 hover:bg-black/90 text-white text-[10px] font-semibold flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity"
+                          >
+                            <ExternalLink className="h-3 w-3" /> Full Size
+                          </a>
+                        </>
                       ) : (
                         <span className="text-zinc-500 text-xs">No scan image available</span>
                       )}

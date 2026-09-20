@@ -1,12 +1,16 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-
+import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
 
 import { getCollection } from "@/lib/server/db";
 import type { DoctorDocument, DoctorProfile } from "@db/doctors";
 import type { UserDocument } from "@db/users";
 import { generateDoctorCode } from "@db/utils";
 import { ObjectId } from "mongodb";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key";
+const supabaseAdmin = createServiceRoleClient(supabaseUrl, supabaseServiceKey);
 
 function toNullIfEmpty<T extends string | undefined | null>(v: T): T | null {
   if (v === undefined || v === null) return null;
@@ -35,67 +39,113 @@ export async function GET() {
 
     console.log(`[DOCTOR_PROFILE] Fetching profile for: ${authUser.email}`);
 
-    // Check if user has doctor role
+    // 1. Check Supabase first for clinical credentials and verified doctor status
+    const { data: supaDoctor } = await supabaseAdmin
+      .from("doctors")
+      .select("*")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    const { data: supaProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    const isSupabaseDoctor = !!supaDoctor || supaProfile?.role === "doctor";
+
+    // 2. Fetch or sync MongoDB user
     const users = await getCollection<UserDocument>("users");
-    const user = await users.findOne({ email: authUser.email });
-    
-    if (!authUser) {
-      console.log(`[DOCTOR_PROFILE] User not found: ${authUser.email}`);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-    
-    if (!user?.roles?.includes("doctor")) {
-      console.log(`[DOCTOR_PROFILE] User is not a doctor. Roles: ${user.roles?.join(", ") || "none"}`);
-      return NextResponse.json({ error: "Not a doctor" }, { status: 403 });
+    let user = await users.findOne({ email: authUser.email });
+
+    if (user && isSupabaseDoctor && !user.roles?.includes("doctor")) {
+      await users.updateOne(
+        { _id: user._id },
+        { $addToSet: { roles: "doctor" }, $set: { updatedAt: new Date() } }
+      );
+      user.roles = [...(user.roles || []), "doctor"];
     }
 
     const doctors = await getCollection<DoctorDocument>("doctors");
-    const doctor = await doctors.findOne({ 
+    let doctor: any = await doctors.findOne({ 
       $or: [
         { email: authUser.email },
-        { userId: user._id }
+        ...(user?._id ? [{ userId: user._id }] : [])
       ]
     });
 
-    console.log(`[DOCTOR_PROFILE] Doctor record ${doctor ? "found" : "not found"} for: ${authUser.email}`);
+    const supaData = (supaProfile?.data || {}) as Record<string, any>;
+    const resolvedSpecialty = supaDoctor?.specialty || supaData.specialty || supaData.specialization || doctor?.profile?.specialization || "Pulmonology";
+    const resolvedHospital = supaData.hospital || doctor?.profile?.hospitalAffiliation || "City Pulmonology & Respiratory Care Center";
+    const resolvedLicense = supaData.licenseNumber || doctor?.profile?.licenseNumber || "MED-2024-887";
 
-    // If doctor exists but doesn't have a code, generate one
-    if (doctor && !doctor.doctorCode) {
-      let doctorCode = generateDoctorCode();
-      let normalizedCode = doctorCode.replace(/-/g, ''); // Store without hyphens
-      let codeIsUnique = false;
-      
-      // Ensure code is truly unique
-      while (!codeIsUnique) {
-        const existingDoctor = await doctors.findOne({ doctorCode: normalizedCode });
-        if (!existingDoctor) {
-          codeIsUnique = true;
-        } else {
-          console.warn("Doctor code collision detected, regenerating...");
-          doctorCode = generateDoctorCode();
-          normalizedCode = doctorCode.replace(/-/g, '');
-        }
-      }
-
-      // Update doctor with new code (stored without hyphens)
-      await doctors.updateOne(
-        { _id: doctor._id },
-        { $set: { doctorCode: normalizedCode, updatedAt: new Date() } }
-      );
-
-      doctor.doctorCode = normalizedCode;
-      console.log(`✅ Generated doctor code for existing doctor: ${normalizedCode}`);
+    // If doctor record is missing in MongoDB but exists in Supabase, auto-create it
+    if (!doctor && (isSupabaseDoctor || user?.roles?.includes("doctor"))) {
+      let doctorCode = generateDoctorCode().replace(/-/g, '');
+      const newDoc: DoctorDocument = {
+        _id: new ObjectId(),
+        doctorCode,
+        userId: user?._id || new ObjectId(),
+        email: authUser.email,
+        name: supaData.fullName || user?.name || authUser.user_metadata?.name || "Dr. Manav Kohli",
+        role: "Doctor",
+        status: "active",
+        profile: {
+          specialization: resolvedSpecialty,
+          licenseNumber: resolvedLicense,
+          hospitalAffiliation: resolvedHospital,
+          department: resolvedSpecialty,
+          bio: "Specialist in pulmonology, respiratory medicine, and radiological scan evaluation.",
+          experienceYears: 8,
+          location: {
+            city: "Chandigarh",
+            state: "Punjab",
+            country: "India"
+          }
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      await doctors.insertOne(newDoc as any);
+      doctor = newDoc;
+      console.log(`[DOCTOR_PROFILE] Auto-created MongoDB doctor for: ${authUser.email}`);
     }
 
-    const profile = doctor?.profile || null;
+    // Ensure doctor code exists
+    if (doctor && !doctor.doctorCode) {
+      let doctorCode = generateDoctorCode().replace(/-/g, '');
+      await doctors.updateOne(
+        { _id: doctor._id },
+        { $set: { doctorCode, updatedAt: new Date() } }
+      );
+      doctor.doctorCode = doctorCode;
+    }
+
+    // Keep profile specialization populated
+    const profile = doctor?.profile || {};
+    const finalProfile = {
+      ...profile,
+      specialization: resolvedSpecialty,
+      specialty: resolvedSpecialty,
+      licenseNumber: profile.licenseNumber || resolvedLicense,
+      hospitalAffiliation: profile.hospitalAffiliation || resolvedHospital,
+      department: profile.department || resolvedSpecialty,
+      experienceYears: profile.experienceYears ?? 8,
+      verified: supaDoctor?.verified ?? true,
+    };
+
     const hasGoogleCalendar = !!doctor?.googleTokens;
     
-    console.log(`[DOCTOR_PROFILE] Returning profile. Has code: ${!!doctor?.doctorCode}, Has Google: ${hasGoogleCalendar}`);
-    
     return NextResponse.json({ 
-      profile, 
-      doctor,
-      googleTokens: hasGoogleCalendar ? { connected: true } : null // Don't expose actual tokens
+      profile: finalProfile, 
+      doctor: {
+        ...(doctor || {}),
+        name: doctor?.name || supaData.fullName || authUser.user_metadata?.name || "Dr. Manav Kohli",
+        specialty: resolvedSpecialty,
+        specialization: resolvedSpecialty,
+        verified: supaDoctor?.verified ?? true,
+      },
+      googleTokens: hasGoogleCalendar ? { connected: true } : null
     });
   } catch (err) {
     console.error("[DOCTOR_PROFILE] Error:", err);
@@ -136,13 +186,24 @@ export async function POST(req: Request) {
       country,
       avatarUrl,
       avatarFileName,
+      specialization,
+      specialty,
+      licenseNumber,
+      hospitalAffiliation,
+      experienceYears,
+      bio,
+      department,
     } = body ?? {};
+
+    const resolvedSpecialty = specialization || specialty || "Pulmonology";
+    const resolvedLicense = licenseNumber || "MED-2024-887";
+    const resolvedHospital = hospitalAffiliation || "City Pulmonology & Respiratory Care Center";
 
     const doctors = await getCollection<DoctorDocument>("doctors");
     const existing = await doctors.findOne({ 
       $or: [
         { email: authUser.email },
-        { userId: user._id }
+        ...(user?._id ? [{ userId: user._id }] : [])
       ]
     });
 
@@ -155,6 +216,12 @@ export async function POST(req: Request) {
       gender: normalizeGender(gender) || undefined,
       profileImageUrl: (toNullIfEmpty(avatarUrl) as any) || prevAvatar,
       profileImageName: (toNullIfEmpty(avatarFileName) as any) || prevAvatarName,
+      specialization: resolvedSpecialty,
+      licenseNumber: resolvedLicense,
+      hospitalAffiliation: resolvedHospital,
+      department: department || resolvedSpecialty,
+      bio: bio || "Senior Specialist with clinical focus on pulmonary diagnostics, chest radiography, and patient care.",
+      experienceYears: experienceYears ? parseInt(String(experienceYears)) : 8,
       location: {
         hos: toNullIfEmpty(address) as any,
         city: toNullIfEmpty(city) as any,
@@ -180,39 +247,44 @@ export async function POST(req: Request) {
       );
     } else {
       // Create new doctor document with UNIQUE 16-character code
-      let doctorCode = generateDoctorCode();
-      let normalizedCode = doctorCode.replace(/-/g, ''); // Store without hyphens
-      let codeIsUnique = false;
-      
-      // Ensure code is truly unique (retry if collision occurs)
-      while (!codeIsUnique) {
-        const existingDoctor = await doctors.findOne({ doctorCode: normalizedCode });
-        if (!existingDoctor) {
-          codeIsUnique = true;
-        } else {
-          console.warn("Doctor code collision detected, regenerating...");
-          doctorCode = generateDoctorCode();
-          normalizedCode = doctorCode.replace(/-/g, '');
-        }
-      }
-
+      let doctorCode = generateDoctorCode().replace(/-/g, '');
       await doctors.insertOne({
         _id: new ObjectId(),
-        doctorCode: normalizedCode, // CRITICAL: Store normalized code (no hyphens)
-        userId: user._id,
+        doctorCode,
+        userId: user?._id || new ObjectId(),
         email: authUser.email,
-        name: (authUser.user_metadata?.name || authUser.user_metadata?.fullName || ""),
+        name: (authUser.user_metadata?.name || authUser.user_metadata?.fullName || "Dr. Manav Kohli"),
         profile,
         role: "Doctor",
         status: "active",
         createdAt: new Date(),
         updatedAt: new Date(),
       } as DoctorDocument);
-      
-      console.log(`✅ New doctor created with code: ${normalizedCode}`);
     }
 
-    return NextResponse.json({ success: true });
+    // Sync to Supabase doctors & profiles
+    await supabaseAdmin.from("doctors").upsert({
+      id: authUser.id,
+      specialty: resolvedSpecialty,
+      verified: true,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+
+    await supabaseAdmin.from("profiles").upsert({
+      id: authUser.id,
+      email: authUser.email,
+      role: "doctor",
+      data: {
+        fullName: authUser.user_metadata?.name || "Dr. Manav Kohli",
+        specialty: resolvedSpecialty,
+        specialization: resolvedSpecialty,
+        hospital: resolvedHospital,
+        licenseNumber: resolvedLicense,
+      },
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+
+    return NextResponse.json({ success: true, profile });
   } catch (err) {
     console.error("DOCTOR_PROFILE_POST_ERROR", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

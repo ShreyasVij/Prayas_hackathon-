@@ -7,6 +7,7 @@ import {
   Calendar as CalendarIcon, 
   Layers, 
   Loader2,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -177,6 +178,14 @@ function DoctorPortalContent() {
             <CalendarIcon className="h-3.5 w-3.5 text-teal-600" />
             <span>Appointments &amp; Schedule</span>
           </button>
+
+          <Link
+            href="/doctor/verify"
+            className="px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200"
+          >
+            <ClipboardCheck className="h-3.5 w-3.5 text-teal-600" />
+            <span>Verify Diagnostics Queue</span>
+          </Link>
         </div>
       </div>
 

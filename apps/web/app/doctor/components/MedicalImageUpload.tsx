@@ -140,8 +140,16 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
         if (persistPayload?.record?.id) {
           sessionStorage.setItem("currentRecordId", persistPayload.record.id);
         }
+        if (persistPayload?.record?.document_url) {
+          sessionStorage.setItem("diagnosticPreviewUrl", persistPayload.record.document_url);
+        } else if (previewUrl) {
+          sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
+        }
       } catch (saveErr) {
         console.warn("Medical record persistence warning:", saveErr);
+        if (previewUrl) {
+          sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
+        }
       }
 
       setProgressPercent(100);
@@ -152,7 +160,7 @@ export function MedicalImageUpload({ resultRedirectUrl }: MedicalImageUploadProp
         analyzedAt: new Date().toISOString(),
         fileName: selectedFile.name,
       }));
-      if (previewUrl) {
+      if (!sessionStorage.getItem("diagnosticPreviewUrl") && previewUrl) {
         sessionStorage.setItem("diagnosticPreviewUrl", previewUrl);
       }
 
