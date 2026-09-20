@@ -131,7 +131,7 @@ export default function Hero({ isAuthed }: { isAuthed: boolean }) {
                   <div className="w-3 h-3 rounded-full bg-amber-400" />
                   <div className="w-3 h-3 rounded-full bg-emerald-400" />
                   <span className="ml-2 text-xs font-mono text-zinc-400">
-                    medilocker.app/dashboard
+                    medora.app/dashboard
                   </span>
                 </div>
 
