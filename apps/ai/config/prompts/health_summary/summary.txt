@@ -18,6 +18,7 @@ Sections MUST be present and cover these headings in this exact order:
 
 Rules:
 - If a section has insufficient evidence, use "No information available.".
+- dont repeat words
 - Keep the language cautious and non-diagnostic: use "may indicate", "appears", "suggests" where appropriate.
 - Base every factual statement on supplied evidence.
 - For test results, preserve supplied values and units; do not create reference ranges.
