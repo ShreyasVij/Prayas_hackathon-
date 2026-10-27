@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Home,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -37,6 +38,7 @@ interface AppNavbarProps {
 
 const patientNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Bio-Telemetry", href: "/minor", icon: Activity },
   { label: "Documents", href: "/documents", icon: FileText },
   { label: "Family", href: "/family", icon: UsersRound },
   { label: "Appointments", href: "/appointments/book", icon: Calendar },
@@ -45,6 +47,7 @@ const patientNavItems = [
 
 const doctorNavItems = [
   { label: "Patient Records", href: "/doctor", icon: ClipboardList },
+  { label: "Bio-Telemetry", href: "/minor", icon: Activity },
 ];
 
 export function AppNavbar({
